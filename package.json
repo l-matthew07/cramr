@@ -1,0 +1,23 @@
+{
+  "name": "cramr",
+  "private": true,
+  "version": "0.1.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "db:generate": "pnpm --filter @cramr/db generate",
+    "db:migrate": "pnpm --filter @cramr/db migrate",
+    "db:setup": "pnpm --filter @cramr/db setup",
+    "db:seed": "pnpm --filter @cramr/db seed",
+    "db:studio": "pnpm --filter @cramr/db studio"
+  },
+  "devDependencies": {
+    "prettier": "^3.2.5",
+    "typescript": "^5.4.5"
+  }
+}

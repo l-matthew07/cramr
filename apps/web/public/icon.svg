@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#0a0a0b"/>
+  <rect x="48" y="48" width="416" height="416" rx="72" fill="#111113"/>
+  <!-- Book icon -->
+  <rect x="136" y="120" width="200" height="260" rx="12" fill="#1d6b3b"/>
+  <rect x="152" y="120" width="12" height="260" fill="#14432a"/>
+  <rect x="152" y="148" width="168" height="8" rx="4" fill="#56d364" opacity="0.8"/>
+  <rect x="152" y="172" width="140" height="8" rx="4" fill="#56d364" opacity="0.6"/>
+  <rect x="152" y="196" width="156" height="8" rx="4" fill="#56d364" opacity="0.6"/>
+  <rect x="152" y="220" width="120" height="8" rx="4" fill="#56d364" opacity="0.4"/>
+  <rect x="152" y="244" width="148" height="8" rx="4" fill="#56d364" opacity="0.4"/>
+  <!-- Flame -->
+  <ellipse cx="316" cy="296" rx="36" ry="44" fill="#f97316" opacity="0.9"/>
+  <ellipse cx="316" cy="308" rx="24" ry="32" fill="#fbbf24"/>
+  <ellipse cx="316" cy="320" rx="14" ry="20" fill="#fef08a"/>
+  <!-- Streak bar -->
+  <rect x="136" y="396" width="200" height="16" rx="8" fill="#1a1a1d"/>
+  <rect x="136" y="396" width="140" height="16" rx="8" fill="#2ea043"/>
+</svg>

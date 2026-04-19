@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0a0a0b" />
+    <meta name="description" content="Study accountability for students. Track sessions, streaks, and stay in sync with your group." />
+    <title>Cramr</title>
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='0.9em' font-size='90'%3E📚%3C/text%3E%3C/svg%3E" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='0.9em' font-size='90'%3E📚%3C/text%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://rsms.me/" />
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("/sw.js").catch(() => {});
+        });
+      }
+    </script>
+  </body>
+</html>

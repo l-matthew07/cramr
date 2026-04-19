@@ -1,0 +1,21 @@
+{
+  "name": "Cramr",
+  "short_name": "Cramr",
+  "description": "Study accountability for students. Track sessions, streaks, and study with your group.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#0a0a0b",
+  "background_color": "#0a0a0b",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [],
+  "categories": ["education", "productivity"]
+}

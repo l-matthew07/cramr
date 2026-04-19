@@ -1,0 +1,175 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(uuid())
+  clerkId     String?  @unique @map("clerk_id")
+  email       String   @unique
+  displayName String   @map("display_name")
+  avatarUrl   String?  @map("avatar_url")
+  timezone    String   @default("UTC")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  sessions          StudySession[]
+  progressEvents    ProgressEvent[]
+  courseMemberships CourseMembership[]
+  groupMemberships  GroupMembership[]
+  dailyActivity     DailyActivity[]
+  streak            Streak?
+  nudges            Nudge[]
+  createdGroups     Group[]            @relation("GroupCreator")
+  createdCourses    Course[]           @relation("CourseCreator")
+
+  @@map("users")
+}
+
+model Course {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  name      String
+  school    String
+  term      String
+  createdBy String   @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  creator     User               @relation("CourseCreator", fields: [createdBy], references: [id])
+  items       CourseItem[]
+  memberships CourseMembership[]
+  sessions    StudySession[]
+
+  @@map("courses")
+}
+
+model CourseItem {
+  id         String    @id @default(uuid())
+  courseId   String    @map("course_id")
+  kind       String // 'lecture' | 'assignment' | 'exam'
+  title      String
+  orderIndex Int       @map("order_index")
+  dueAt      DateTime? @map("due_at")
+
+  course   Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  progress ProgressEvent[]
+
+  @@index([courseId, orderIndex])
+  @@map("course_items")
+}
+
+model CourseMembership {
+  userId   String   @map("user_id")
+  courseId String   @map("course_id")
+  joinedAt DateTime @default(now()) @map("joined_at")
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@id([userId, courseId])
+  @@map("course_memberships")
+}
+
+model Group {
+  id         String   @id @default(uuid())
+  name       String
+  inviteCode String   @unique @map("invite_code")
+  createdBy  String   @map("created_by")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  creator     User              @relation("GroupCreator", fields: [createdBy], references: [id])
+  memberships GroupMembership[]
+
+  @@map("groups")
+}
+
+model GroupMembership {
+  userId   String   @map("user_id")
+  groupId  String   @map("group_id")
+  role     String   @default("member") // owner | member
+  joinedAt DateTime @default(now()) @map("joined_at")
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@id([userId, groupId])
+  @@map("group_memberships")
+}
+
+model StudySession {
+  id              String    @id @default(uuid())
+  userId          String    @map("user_id")
+  courseId        String?   @map("course_id")
+  startedAt       DateTime  @default(now()) @map("started_at")
+  endedAt         DateTime? @map("ended_at")
+  durationSeconds Int?      @map("duration_seconds")
+  lastHeartbeatAt DateTime  @default(now()) @map("last_heartbeat_at")
+  source          String    @default("timer")
+
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course         Course?         @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  progressEvents ProgressEvent[]
+
+  @@index([userId, startedAt])
+  @@index([courseId, startedAt])
+  @@index([endedAt])
+  @@map("study_sessions")
+}
+
+model ProgressEvent {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  courseItemId String   @map("course_item_id")
+  completedAt  DateTime @default(now()) @map("completed_at")
+  sessionId    String?  @map("session_id")
+
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseItem CourseItem    @relation(fields: [courseItemId], references: [id], onDelete: Cascade)
+  session    StudySession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, courseItemId])
+  @@index([userId, completedAt])
+  @@map("progress_events")
+}
+
+model DailyActivity {
+  userId         String   @map("user_id")
+  activityDate   DateTime @map("activity_date") @db.Date
+  totalSeconds   Int      @default(0) @map("total_seconds")
+  sessionCount   Int      @default(0) @map("session_count")
+  itemsCompleted Int      @default(0) @map("items_completed")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, activityDate])
+  @@index([activityDate])
+  @@map("daily_activity")
+}
+
+model Streak {
+  userId         String    @id @map("user_id")
+  currentLength  Int       @default(0) @map("current_length")
+  longestLength  Int       @default(0) @map("longest_length")
+  lastActiveDate DateTime? @map("last_active_date") @db.Date
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("streaks")
+}
+
+model Nudge {
+  id      String    @id @default(uuid())
+  userId  String    @map("user_id")
+  kind    String
+  payload Json
+  sentAt  DateTime  @default(now()) @map("sent_at")
+  readAt  DateTime? @map("read_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, sentAt])
+  @@map("nudges")
+}

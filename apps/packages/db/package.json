@@ -1,0 +1,28 @@
+{
+  "name": "@cramr/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "generate": "prisma generate",
+    "migrate": "prisma migrate dev",
+    "migrate:deploy": "prisma migrate deploy",
+    "setup": "prisma migrate deploy && prisma db execute --file ./prisma/extensions.sql --schema ./prisma/schema.prisma",
+    "studio": "prisma studio",
+    "seed": "tsx prisma/seed.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.14.0"
+  },
+  "devDependencies": {
+    "prisma": "^5.14.0",
+    "tsx": "^4.7.2",
+    "typescript": "^5.4.5"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  }
+}
