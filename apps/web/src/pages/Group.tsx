@@ -6,6 +6,7 @@ import {
   useLeaderboard,
   useMe,
 } from "../lib/api";
+import { GroupRaceCard } from "../components/GameCard";
 import { GroupHeatmap } from "../components/Heatmap";
 import { Leaderboard } from "../components/Leaderboard";
 import { ActivityFeed } from "../components/ActivityFeed";
@@ -47,6 +48,12 @@ export function GroupPage() {
           {copied ? "Copied!" : "Copy invite link"}
         </button>
       </header>
+
+      <GroupRaceCard
+        entries={leaderboard.data}
+        meUserId={me.data?.id}
+        groupName={group.data.name}
+      />
 
       <section className="rounded-xl border border-ink-800 bg-ink-900 p-5">
         <div className="flex items-center justify-between mb-3">

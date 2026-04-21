@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
-import { useMe, useMyCourses, useMyGroups, useActiveSession } from "../lib/api";
+import { useMe, useMyCourses, useMyGroups, useActiveSession, isMockApiActive } from "../lib/api";
 import { usePresenceSocket } from "../lib/socket";
 import { UserButton } from "@clerk/clerk-react";
 
@@ -12,6 +12,7 @@ export function Layout() {
   const groups = useMyGroups();
   const active = useActiveSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const previewMode = isMockApiActive();
 
   // Connect Socket.IO presence channels once layout is mounted
   usePresenceSocket();
@@ -149,6 +150,11 @@ export function Layout() {
       </aside>
 
       <main className="flex-1 min-w-0 pb-16 md:pb-0">
+        {previewMode && (
+          <div className="border-b border-amber-900/50 bg-amber-950/30 px-4 py-2 text-xs text-amber-200">
+            Preview mode: using in-browser mock data because the local API/auth setup is unavailable.
+          </div>
+        )}
         <Outlet />
       </main>
 

@@ -2,27 +2,51 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { FeedItem } from "@cramr/shared";
 import { useTokenGetter } from "./auth";
 import { track } from "./analytics";
+import { activateMockApi, isMockApiActive, mockFetch } from "./mockApi";
 
 const API = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
+const allowDevMockFallback =
+  import.meta.env.DEV && !import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+
+export { isMockApiActive };
 
 export async function apiFetch<T>(
   path: string,
   init: RequestInit & { token?: string | null } = {},
 ): Promise<T> {
+  if (isMockApiActive()) {
+    return mockFetch<T>(path, init);
+  }
+
   const headers = new Headers(init.headers);
   headers.set("Content-Type", "application/json");
   if (init.token) headers.set("Authorization", `Bearer ${init.token}`);
-  const res = await fetch(`${API}${path}`, { ...init, headers });
-  if (!res.ok) {
-    let msg = res.statusText;
-    try {
-      const j = await res.json();
-      msg = j.error ?? msg;
-    } catch {}
-    throw new Error(msg);
+
+  try {
+    const res = await fetch(`${API}${path}`, { ...init, headers });
+    if (!res.ok) {
+      let msg = res.statusText;
+      try {
+        const j = await res.json();
+        msg = j.error ?? msg;
+      } catch {}
+
+      if (allowDevMockFallback && (res.status === 401 || res.status >= 500)) {
+        activateMockApi();
+        return mockFetch<T>(path, init);
+      }
+
+      throw new Error(msg);
+    }
+    if (res.status === 204) return undefined as T;
+    return (await res.json()) as T;
+  } catch (error) {
+    if (allowDevMockFallback) {
+      activateMockApi();
+      return mockFetch<T>(path, init);
+    }
+    throw error;
   }
-  if (res.status === 204) return undefined as T;
-  return (await res.json()) as T;
 }
 
 function useApi() {

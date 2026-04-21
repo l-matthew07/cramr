@@ -7,7 +7,9 @@
   },
   "packageManager": "pnpm@9.0.0",
   "scripts": {
-    "dev": "pnpm -r --parallel dev",
+    "dev": "pnpm -r --parallel --no-bail dev",
+    "dev:web": "pnpm --filter @cramr/web dev",
+    "dev:api": "pnpm --filter @cramr/api dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "db:generate": "pnpm --filter @cramr/db generate",

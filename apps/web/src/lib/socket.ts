@@ -2,6 +2,7 @@ import { io, type Socket } from "socket.io-client";
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useMyGroups } from "./api";
+import { isMockApiActive } from "./mockApi";
 
 const URL = import.meta.env.VITE_WS_URL ?? "http://localhost:4000";
 const hasClerk = !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
@@ -14,6 +15,9 @@ export function setSocketTokenGetter(fn: () => Promise<string | null>) {
 }
 
 export async function getSocket(): Promise<Socket> {
+  if (isMockApiActive()) {
+    throw new Error("mock_api_active");
+  }
   if (socket?.connected) return socket;
   const token = hasClerk && tokenGetter ? await tokenGetter() : "dev";
   socket = io(URL, {
@@ -41,7 +45,7 @@ export function usePresenceSocket() {
   const groupIdKey = groups.data?.map((g) => g.id).join(",") ?? "";
 
   useEffect(() => {
-    if (!groupIdKey) return;
+    if (!groupIdKey || isMockApiActive()) return;
     const groupIds = groupIdKey.split(",");
 
     let mounted = true;
@@ -61,6 +65,8 @@ export function usePresenceSocket() {
         qc.invalidateQueries({ queryKey: ["presence"] });
         qc.invalidateQueries({ queryKey: ["session", "active"] });
       });
+    }).catch(() => {
+      // Preview mode and offline local dev deliberately skip realtime.
     });
 
     return () => {

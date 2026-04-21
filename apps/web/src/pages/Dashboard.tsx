@@ -3,11 +3,14 @@ import {
   useActiveSession,
   useMe,
   useMyCourses,
+  useMyGroups,
   usePersonalHeatmap,
   useStartSession,
   useNudges,
   useDismissNudge,
+  useLeaderboard,
 } from "../lib/api";
+import { DashboardGameCard } from "../components/GameCard";
 import { Heatmap } from "../components/Heatmap";
 import { StudyingNow } from "../components/StudyingNow";
 import { useState } from "react";
@@ -17,6 +20,7 @@ export function Dashboard() {
   const me = useMe();
   const active = useActiveSession();
   const courses = useMyCourses();
+  const groups = useMyGroups();
   const heatmap = usePersonalHeatmap();
   const nudges = useNudges();
   const dismiss = useDismissNudge();
@@ -24,6 +28,8 @@ export function Dashboard() {
   const navigate = useNavigate();
 
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+  const primaryGroup = groups.data?.[0];
+  const leaderboard = useLeaderboard(primaryGroup?.id, "week");
 
   async function handleStart() {
     if (active.data) {
@@ -60,6 +66,15 @@ export function Dashboard() {
           </div>
         )}
       </header>
+
+      <DashboardGameCard
+        heatmap={heatmap.data}
+        streak={me.data?.streak.current ?? 0}
+        leaderboard={leaderboard.data}
+        meUserId={me.data?.id}
+        groupName={primaryGroup?.name}
+        groupId={primaryGroup?.id}
+      />
 
       <section className="rounded-xl border border-ink-800 bg-ink-900 p-5">
         <div className="flex items-center justify-between gap-4 flex-wrap">
