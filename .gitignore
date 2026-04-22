@@ -8,6 +8,9 @@ dist/
 .turbo/
 .vite/
 .next/
+*.tsbuildinfo
+apps/web/vite.config.js
+apps/web/vite.config.d.ts
 coverage/
 .pnpm-store/
 packages/db/node_modules/.prisma/
