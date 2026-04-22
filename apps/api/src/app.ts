@@ -17,9 +17,13 @@ import { webhooksRouter } from "./routes/webhooks.js";
 export function buildApp() {
   const app = express();
 
+  const allowedOrigins = (process.env.WEB_ORIGIN ?? "http://localhost:5173")
+    .split(",")
+    .map((s) => s.trim().replace(/\/$/, "")); // Remove any trailing slashes
+
   app.use(
     cors({
-      origin: process.env.WEB_ORIGIN ?? "http://localhost:5173",
+      origin: allowedOrigins,
       credentials: true,
     }),
   );
