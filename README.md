@@ -62,3 +62,6 @@ packages/
 | `pnpm db:migrate` | Create a new migration from schema changes |
 | `pnpm db:seed` | Seed a demo user + course + items |
 | `pnpm db:studio` | Open Prisma Studio |
+
+
+adsfasdf
