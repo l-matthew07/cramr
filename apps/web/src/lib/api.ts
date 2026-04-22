@@ -4,9 +4,12 @@ import { useTokenGetter } from "./auth";
 import { track } from "./analytics";
 import { activateMockApi, isMockApiActive, mockFetch } from "./mockApi";
 
-const API = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
-const allowDevMockFallback =
-  import.meta.env.DEV && !import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+const API =
+  import.meta.env.VITE_API_URL ??
+  (import.meta.env.DEV ? "http://localhost:4000" : "");
+// In local dev, let the UI fall back to mock data even if Clerk is configured.
+// That keeps the signed-in flow usable while the backend is down or not fully wired.
+const allowDevMockFallback = import.meta.env.DEV;
 
 export { isMockApiActive };
 

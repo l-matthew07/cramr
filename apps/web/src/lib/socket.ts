@@ -4,7 +4,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useMyGroups } from "./api";
 import { isMockApiActive } from "./mockApi";
 
-const URL = import.meta.env.VITE_WS_URL ?? "http://localhost:4000";
+const URL =
+  import.meta.env.VITE_WS_URL ??
+  (import.meta.env.DEV ? "http://localhost:4000" : window.location.origin);
 const hasClerk = !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
 let socket: Socket | null = null;
