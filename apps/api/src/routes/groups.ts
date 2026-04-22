@@ -23,7 +23,7 @@ groupsRouter.get("/", async (req, res) => {
     orderBy: { joinedAt: "desc" },
   });
   res.json(
-    memberships.map((m) => ({
+    memberships.map((m: { group: { id: string; name: string; inviteCode: string; _count: { memberships: number } }; role: string }) => ({
       id: m.group.id,
       name: m.group.name,
       inviteCode: m.group.inviteCode,
@@ -117,7 +117,7 @@ groupsRouter.get("/:id", async (req, res, next) => {
       id: group.id,
       name: group.name,
       inviteCode: group.inviteCode,
-      members: group.memberships.map((m) => ({
+      members: group.memberships.map((m: { user: { id: string; displayName: string; avatarUrl: string | null; streak: { currentLength: number; longestLength: number } | null }; role: string }) => ({
         id: m.user.id,
         displayName: m.user.displayName,
         avatarUrl: m.user.avatarUrl,
@@ -153,7 +153,7 @@ groupsRouter.get("/:id/presence", async (req, res, next) => {
       },
     });
     res.json(
-      active.map((s) => ({
+      active.map((s: { id: string; startedAt: Date; user: { id: string; displayName: string; avatarUrl: string | null }; course: { id: string; code: string } | null }) => ({
         sessionId: s.id,
         startedAt: s.startedAt,
         userId: s.user.id,

@@ -14,7 +14,7 @@ coursesRouter.get("/", async (req, res) => {
     include: { course: true },
     orderBy: { joinedAt: "desc" },
   });
-  res.json(memberships.map((m) => m.course));
+  res.json(memberships.map((m: { course: unknown }) => m.course));
 });
 
 coursesRouter.post("/join", async (req, res, next) => {
@@ -82,13 +82,13 @@ coursesRouter.get("/:id", async (req, res, next) => {
       term: course.term,
       createdBy: course.createdBy,
       memberCount,
-      items: course.items.map((i) => ({
+      items: course.items.map((i: { id: string; kind: string; title: string; orderIndex: number; dueAt: Date | null }) => ({
         id: i.id,
         kind: i.kind,
         title: i.title,
         orderIndex: i.orderIndex,
-        dueAt: i.dueAt,
-        completedAt: doneByItem.get(i.id)?.toISOString() ?? null,
+        dueAt: i.dueAt ? i.dueAt.toISOString() : null,
+        completedAt: (doneByItem.get(i.id) as Date | undefined)?.toISOString() ?? null,
         classCompleters: completersByItem.get(i.id) ?? 0,
         classCompletionRate:
           memberCount > 0 ? (completersByItem.get(i.id) ?? 0) / memberCount : 0,
@@ -118,11 +118,11 @@ coursesRouter.get("/:id/percentile", async (req, res, next) => {
       id,
     );
     if (rows.length === 0) return res.json({ percentile: 0, peers: 0 });
-    const me = rows.find((r) => r.user_id === userId);
+    const me = rows.find((r: { user_id: string; done: bigint }) => r.user_id === userId);
     const myScore = me ? Number(me.done) : 0;
-    const peers = rows.filter((r) => r.user_id !== userId);
+    const peers = rows.filter((r: { user_id: string; done: bigint }) => r.user_id !== userId);
     if (peers.length === 0) return res.json({ percentile: 100, peers: 0 });
-    const behind = peers.filter((r) => Number(r.done) < myScore).length;
+    const behind = peers.filter((r: { user_id: string; done: bigint }) => Number(r.done) < myScore).length;
     const percentile = Math.round((behind / peers.length) * 100);
     res.json({ percentile, peers: peers.length, myScore });
   } catch (e) {
