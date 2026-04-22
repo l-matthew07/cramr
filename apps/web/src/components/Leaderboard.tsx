@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { fmtDuration } from "../lib/time";
 
 interface Entry {
@@ -5,7 +6,10 @@ interface Entry {
   displayName: string;
   avatarUrl: string | null;
   totalSeconds: number;
+  activeDays7d?: number;
   currentStreak: number;
+  score?: number;
+  level?: number;
 }
 
 export function Leaderboard({ entries, meUserId }: { entries: Entry[]; meUserId?: string }) {
@@ -38,10 +42,17 @@ export function Leaderboard({ entries, meUserId }: { entries: Entry[]; meUserId?
               <div className="flex items-center gap-3">
                 <span className="text-ink-500 w-5 text-right text-xs">#{idx + 1}</span>
                 {medal && <span className="text-sm">{medal}</span>}
-                <span className="font-medium">{e.displayName}</span>
+                <Link to={`/users/${e.userId}`} className="font-medium hover:text-emerald-300">
+                  {e.displayName}
+                </Link>
                 {e.currentStreak > 0 && (
                   <span className="text-[11px] text-amber-400">
                     🔥 {e.currentStreak}
+                  </span>
+                )}
+                {e.level && (
+                  <span className="text-[11px] text-emerald-300">
+                    Lvl {e.level}
                   </span>
                 )}
               </div>

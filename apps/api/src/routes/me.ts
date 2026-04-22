@@ -2,15 +2,19 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "@cramr/db";
 import { requireUser } from "../middleware/auth.js";
+import { getUserGameStats } from "../services/gamification.js";
 
 export const meRouter = Router();
 
 meRouter.get("/", async (req, res) => {
   const userId = requireUser(req);
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
-  const streak = await prisma.streak.findUnique({ where: { userId } });
-  const groupCount = await prisma.groupMembership.count({ where: { userId } });
-  const courseCount = await prisma.courseMembership.count({ where: { userId } });
+  const [streak, groupCount, courseCount, game] = await Promise.all([
+    prisma.streak.findUnique({ where: { userId } }),
+    prisma.groupMembership.count({ where: { userId } }),
+    prisma.courseMembership.count({ where: { userId } }),
+    getUserGameStats(userId, user.timezone),
+  ]);
   res.json({
     id: user.id,
     email: user.email,
@@ -20,6 +24,7 @@ meRouter.get("/", async (req, res) => {
     streak: streak
       ? { current: streak.currentLength, longest: streak.longestLength }
       : { current: 0, longest: 0 },
+    game,
     onboarded: groupCount > 0 || courseCount > 0,
   });
 });

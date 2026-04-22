@@ -7,6 +7,7 @@ import { GroupPage } from "./pages/Group";
 import { CoursePage } from "./pages/Course";
 import { CreateCourse } from "./pages/CreateCourse";
 import { Profile } from "./pages/Profile";
+import { UserProfilePage } from "./pages/UserProfile";
 import { Onboarding } from "./pages/Onboarding";
 import { Join } from "./pages/Join";
 import { NotFound } from "./pages/NotFound";
@@ -83,6 +84,7 @@ function Shell() {
         />
         <Route path="/session" element={<SessionPage />} />
         <Route path="/groups/:id" element={<GroupPage />} />
+        <Route path="/users/:id" element={<UserProfilePage />} />
         <Route path="/courses/new" element={<CreateCourse />} />
         <Route path="/courses/:id" element={<CoursePage />} />
         <Route path="/profile" element={<Profile />} />

@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import {
   useGroup,
   useGroupFeed,
@@ -35,6 +35,17 @@ export function GroupPage() {
           <h1 className="text-2xl font-semibold">{group.data.name}</h1>
           <div className="text-sm text-ink-400">
             {group.data.members.length} member{group.data.members.length === 1 ? "" : "s"}
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {group.data.members.map((member) => (
+              <Link
+                key={member.id}
+                to={`/users/${member.id}`}
+                className="rounded-full border border-ink-700 px-3 py-1.5 text-xs text-ink-300 hover:bg-ink-800"
+              >
+                {member.displayName}
+              </Link>
+            ))}
           </div>
         </div>
         <button

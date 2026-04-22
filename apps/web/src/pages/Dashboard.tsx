@@ -70,6 +70,7 @@ export function Dashboard() {
       <DashboardGameCard
         heatmap={heatmap.data}
         streak={me.data?.streak.current ?? 0}
+        game={me.data?.game}
         leaderboard={leaderboard.data}
         meUserId={me.data?.id}
         groupName={primaryGroup?.name}

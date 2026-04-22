@@ -1,4 +1,5 @@
 import type { FeedItem } from "@cramr/shared";
+import { Link } from "react-router-dom";
 import { fmtDuration, fmtRelative } from "../lib/time";
 
 export function ActivityFeed({ items }: { items: FeedItem[] }) {
@@ -13,10 +14,14 @@ export function ActivityFeed({ items }: { items: FeedItem[] }) {
     <ul className="flex flex-col divide-y divide-ink-800">
       {items.map((item) => (
         <li key={`${item.kind}-${item.id}`} className="py-3 flex items-start gap-3">
-          <Avatar name={item.displayName} />
+          <Link to={`/users/${item.userId}`} className="shrink-0">
+            <Avatar name={item.displayName} />
+          </Link>
           <div className="min-w-0 flex-1">
             <div className="text-sm">
-              <span className="font-medium">{item.displayName}</span>{" "}
+              <Link to={`/users/${item.userId}`} className="font-medium hover:text-emerald-300">
+                {item.displayName}
+              </Link>{" "}
               {item.kind === "session" ? (
                 <>
                   studied for{" "}

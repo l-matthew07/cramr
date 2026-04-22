@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useMyGroups, useGroupPresence } from "../lib/api";
 
 export function StudyingNow() {
@@ -19,13 +20,14 @@ function GroupPresence({ groupId, groupName }: { groupId: string; groupName: str
       <span className="text-ink-400">{groupName}:</span>
       <div className="flex -space-x-2">
         {data.slice(0, 6).map((p) => (
-          <div
+          <Link
             key={p.sessionId}
+            to={`/users/${p.userId}`}
             title={`${p.displayName} · ${p.course?.code ?? "free study"}`}
             className="w-7 h-7 rounded-full bg-ink-700 border-2 border-ink-900 flex items-center justify-center text-xs font-medium"
           >
             {p.displayName.charAt(0).toUpperCase()}
-          </div>
+          </Link>
         ))}
       </div>
       <span className="text-ink-300 flex items-center gap-1.5">
