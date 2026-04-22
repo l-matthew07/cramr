@@ -59,6 +59,25 @@ function useApi() {
 
 // ---------- Hooks ----------
 
+export interface GameBadge {
+  title: string;
+  tone: "amber" | "emerald" | "sky" | "rose";
+  description: string;
+}
+
+export interface GameStats {
+  weeklySeconds: number;
+  activeDays7d: number;
+  todaySeconds: number;
+  streak: number;
+  weeklyGoalSeconds: number;
+  score: number;
+  level: number;
+  nextLevelScore: number;
+  progress: number;
+  badges: GameBadge[];
+}
+
 export interface Me {
   id: string;
   email: string;
@@ -66,6 +85,7 @@ export interface Me {
   avatarUrl: string | null;
   timezone: string;
   streak: { current: number; longest: number };
+  game: GameStats;
   onboarded: boolean;
 }
 
@@ -298,11 +318,49 @@ export interface GroupDetail {
   }>;
 }
 
+export interface UserProfile {
+  id: string;
+  email: string | null;
+  displayName: string;
+  avatarUrl: string | null;
+  timezone: string;
+  streak: { current: number; longest: number };
+  game: GameStats;
+  stats: {
+    totalStudySeconds: number;
+    last30DaysSeconds: number;
+    completedItems: number;
+    groupsCount: number;
+    coursesCount: number;
+  };
+  sharedGroups: Array<{ id: string; name: string; inviteCode: string }>;
+  sharedCourses: Array<{ id: string; code: string; name: string }>;
+  strengths: Array<{
+    id: string;
+    code: string;
+    name: string;
+    totalItems: number;
+    completedItems: number;
+    completionRate: number;
+  }>;
+  heatmap: HeatmapRow[];
+  recentActivity: FeedItem[];
+}
+
 export function useGroup(id: string | undefined) {
   const api = useApi();
   return useQuery({
     queryKey: ["group", id],
     queryFn: () => api<GroupDetail>(`/api/groups/${id}`),
+    enabled: !!id,
+  });
+}
+
+export function useUserProfile(id: string | undefined) {
+  const api = useApi();
+  return useQuery({
+    queryKey: ["user", id, "profile"],
+    queryFn: () => api<UserProfile>(`/api/users/${id}/profile`),
     enabled: !!id,
   });
 }
@@ -403,7 +461,13 @@ export function useLeaderboard(groupId: string | undefined, window: "week" | "mo
           displayName: string;
           avatarUrl: string | null;
           totalSeconds: number;
+          activeDays7d: number;
           currentStreak: number;
+          score: number;
+          level: number;
+          nextLevelScore: number;
+          progress: number;
+          badges: GameBadge[];
         }>
       >(`/api/leaderboard/group/${groupId}?window=${window}`),
     enabled: !!groupId,

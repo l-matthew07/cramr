@@ -2,20 +2,18 @@ import { Link } from "react-router-dom";
 import { fmtDuration } from "../lib/time";
 import {
   activeDays,
-  badgeSet,
-  makeLevel,
-  makeStudyScore,
   rankSummary,
   sumHeatmap,
   todaysSeconds,
-  weeklyGoalSeconds,
   type HeatmapLikeCell,
   type RankedEntry,
 } from "../lib/gamify";
+import type { GameStats } from "../lib/api";
 
 export function DashboardGameCard({
   heatmap,
   streak,
+  game,
   leaderboard,
   meUserId,
   groupName,
@@ -23,24 +21,24 @@ export function DashboardGameCard({
 }: {
   heatmap: HeatmapLikeCell[] | undefined;
   streak: number;
+  game?: GameStats;
   leaderboard: RankedEntry[] | undefined;
   meUserId: string | undefined;
   groupName?: string;
   groupId?: string;
 }) {
-  const weeklySeconds = sumHeatmap(heatmap, 7);
-  const todaySeconds = todaysSeconds(heatmap);
-  const activeDays7d = activeDays(heatmap, 7);
-  const score = makeStudyScore({ weeklySeconds, activeDays7d, streak });
-  const level = makeLevel(score);
-  const goal = weeklyGoalSeconds(streak);
+  const weeklySeconds = game?.weeklySeconds ?? sumHeatmap(heatmap, 7);
+  const todaySeconds = game?.todaySeconds ?? todaysSeconds(heatmap);
+  const activeDays7d = game?.activeDays7d ?? activeDays(heatmap, 7);
+  const level = {
+    level: game?.level ?? 1,
+    score: game?.score ?? 0,
+    nextLevelScore: game?.nextLevelScore ?? 250,
+    progress: game?.progress ?? 0,
+  };
+  const goal = game?.weeklyGoalSeconds ?? Math.max(6 * 3600, Math.min(14 * 3600, (8 + Math.min(streak, 6)) * 3600));
   const rank = rankSummary(leaderboard, meUserId);
-  const badges = badgeSet({
-    streak,
-    weeklySeconds,
-    activeDays7d,
-    rank: rank?.rank,
-  });
+  const badges = game?.badges ?? [];
 
   const quests = [
     {

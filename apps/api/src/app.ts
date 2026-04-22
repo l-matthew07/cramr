@@ -11,6 +11,7 @@ import { heatmapRouter } from "./routes/heatmap.js";
 import { feedRouter } from "./routes/feed.js";
 import { leaderboardRouter } from "./routes/leaderboard.js";
 import { nudgesRouter } from "./routes/nudges.js";
+import { usersRouter } from "./routes/users.js";
 import { webhooksRouter } from "./routes/webhooks.js";
 
 export function buildApp() {
@@ -41,6 +42,7 @@ export function buildApp() {
   app.use("/api/feed", feedRouter);
   app.use("/api/leaderboard", leaderboardRouter);
   app.use("/api/nudges", nudgesRouter);
+  app.use("/api/users", usersRouter);
 
   app.use(errorHandler);
 

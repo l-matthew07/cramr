@@ -1,5 +1,24 @@
 import type { FeedItem } from "@cramr/shared";
 
+type GameBadge = {
+  title: string;
+  tone: "amber" | "emerald" | "sky" | "rose";
+  description: string;
+};
+
+type GameStats = {
+  weeklySeconds: number;
+  activeDays7d: number;
+  todaySeconds: number;
+  streak: number;
+  weeklyGoalSeconds: number;
+  score: number;
+  level: number;
+  nextLevelScore: number;
+  progress: number;
+  badges: GameBadge[];
+};
+
 type Me = {
   id: string;
   email: string;
@@ -7,6 +26,7 @@ type Me = {
   avatarUrl: string | null;
   timezone: string;
   streak: { current: number; longest: number };
+  game: GameStats;
   onboarded: boolean;
 };
 
@@ -68,7 +88,13 @@ type LeaderboardEntry = {
   displayName: string;
   avatarUrl: string | null;
   totalSeconds: number;
+  activeDays7d: number;
   currentStreak: number;
+  score: number;
+  level: number;
+  nextLevelScore: number;
+  progress: number;
+  badges: GameBadge[];
 };
 
 type PresenceEntry = {
@@ -144,6 +170,11 @@ export async function mockFetch<T>(path: string, init: RequestInit = {}): Promis
       ...state.me,
       ...patch,
     };
+    state.me.game = makeGameStats(
+      state.personalHeatmap,
+      state.me.streak.current,
+      null,
+    );
     return clone(state.me) as T;
   }
 
@@ -325,22 +356,26 @@ export async function mockFetch<T>(path: string, init: RequestInit = {}): Promis
     state.groups = [group, ...state.groups];
     state.leaderboard[group.id] = {
       week: [
-        {
-          userId: state.me.id,
-          displayName: state.me.displayName,
-          avatarUrl: state.me.avatarUrl,
-          totalSeconds: 5400,
-          currentStreak: state.me.streak.current,
-        },
+        makeLeaderboardEntry(
+          state.me.id,
+          state.me.displayName,
+          state.me.avatarUrl,
+          5400,
+          2,
+          state.me.streak.current,
+          1,
+        ),
       ],
       month: [
-        {
-          userId: state.me.id,
-          displayName: state.me.displayName,
-          avatarUrl: state.me.avatarUrl,
-          totalSeconds: 21600,
-          currentStreak: state.me.streak.current,
-        },
+        makeLeaderboardEntry(
+          state.me.id,
+          state.me.displayName,
+          state.me.avatarUrl,
+          21600,
+          8,
+          state.me.streak.current,
+          1,
+        ),
       ],
     };
     state.feed[group.id] = [];
@@ -412,6 +447,11 @@ export async function mockFetch<T>(path: string, init: RequestInit = {}): Promis
     return clone(state.leaderboard[leaderboardMatch[1]!]?.[window] ?? []) as T;
   }
 
+  const userProfileMatch = url.pathname.match(/^\/api\/users\/([^/]+)\/profile$/);
+  if (userProfileMatch && method === "GET") {
+    return clone(buildUserProfile(userProfileMatch[1]!)) as T;
+  }
+
   if (url.pathname === "/api/nudges" && method === "GET") {
     return clone(state.nudges) as T;
   }
@@ -437,6 +477,7 @@ function createInitialState(): MockState {
     avatarUrl: null,
     timezone: "America/Toronto",
     streak: { current: 4, longest: 11 },
+    game: makeGameStats(meHeatmap, 4, 2),
     onboarded: true,
   };
 
@@ -516,14 +557,14 @@ function createInitialState(): MockState {
     leaderboard: {
       [IDS.group]: {
         week: [
-          { userId: IDS.ava, displayName: "Ava", avatarUrl: null, totalSeconds: 14100, currentStreak: 7 },
-          { userId: IDS.me, displayName: me.displayName, avatarUrl: null, totalSeconds: 11400, currentStreak: me.streak.current },
-          { userId: IDS.marcus, displayName: "Marcus", avatarUrl: null, totalSeconds: 6600, currentStreak: 2 },
+          makeLeaderboardEntry(IDS.ava, "Ava", null, 14100, 5, 7, 1),
+          makeLeaderboardEntry(IDS.me, me.displayName, null, 11400, 4, me.streak.current, 2),
+          makeLeaderboardEntry(IDS.marcus, "Marcus", null, 6600, 3, 2, 3),
         ],
         month: [
-          { userId: IDS.me, displayName: me.displayName, avatarUrl: null, totalSeconds: 46800, currentStreak: me.streak.current },
-          { userId: IDS.ava, displayName: "Ava", avatarUrl: null, totalSeconds: 42900, currentStreak: 7 },
-          { userId: IDS.marcus, displayName: "Marcus", avatarUrl: null, totalSeconds: 20100, currentStreak: 2 },
+          makeLeaderboardEntry(IDS.me, me.displayName, null, 46800, 18, me.streak.current, 1),
+          makeLeaderboardEntry(IDS.ava, "Ava", null, 42900, 17, 7, 2),
+          makeLeaderboardEntry(IDS.marcus, "Marcus", null, 20100, 10, 2, 3),
         ],
       },
     },
@@ -633,6 +674,105 @@ function summarizeGroup(group: GroupDetail) {
   };
 }
 
+function buildUserProfile(userId: string) {
+  const profileMap = {
+    [IDS.me]: {
+      id: IDS.me,
+      email: state.me.email,
+      displayName: state.me.displayName,
+      avatarUrl: null,
+      timezone: state.me.timezone,
+      streak: state.me.streak,
+      game: makeGameStats(state.personalHeatmap, state.me.streak.current, 2),
+      stats: {
+        totalStudySeconds: state.personalHeatmap.reduce((sum, cell) => sum + cell.value, 0),
+        last30DaysSeconds: state.personalHeatmap.slice(-30).reduce((sum, cell) => sum + cell.value, 0),
+        completedItems: state.courses.reduce(
+          (sum, course) => sum + course.items.filter((item) => item.completedAt).length,
+          0,
+        ),
+        groupsCount: state.groups.length,
+        coursesCount: state.courses.length,
+      },
+      sharedGroups: state.groups.map((group) => ({
+        id: group.id,
+        name: group.name,
+        inviteCode: group.inviteCode,
+      })),
+      sharedCourses: state.courses.map((course) => ({
+        id: course.id,
+        code: course.code,
+        name: course.name,
+      })),
+      strengths: buildStrengthsForUser(IDS.me),
+      heatmap: state.personalHeatmap,
+      recentActivity: flattenRecentActivityForUser(IDS.me),
+    },
+    [IDS.ava]: {
+      id: IDS.ava,
+      email: null,
+      displayName: "Ava",
+      avatarUrl: null,
+      timezone: "America/Toronto",
+      streak: { current: 7, longest: 13 },
+      game: makeGameStats(state.peerHeatmaps[IDS.ava] ?? [], 7, 1),
+      stats: {
+        totalStudySeconds: (state.peerHeatmaps[IDS.ava] ?? []).reduce((sum, cell) => sum + cell.value, 0),
+        last30DaysSeconds: (state.peerHeatmaps[IDS.ava] ?? []).slice(-30).reduce((sum, cell) => sum + cell.value, 0),
+        completedItems: 11,
+        groupsCount: 1,
+        coursesCount: 2,
+      },
+      sharedGroups: state.groups.map((group) => ({
+        id: group.id,
+        name: group.name,
+        inviteCode: group.inviteCode,
+      })),
+      sharedCourses: state.courses.map((course) => ({
+        id: course.id,
+        code: course.code,
+        name: course.name,
+      })),
+      strengths: buildStrengthsForUser(IDS.ava),
+      heatmap: state.peerHeatmaps[IDS.ava] ?? [],
+      recentActivity: flattenRecentActivityForUser(IDS.ava),
+    },
+    [IDS.marcus]: {
+      id: IDS.marcus,
+      email: null,
+      displayName: "Marcus",
+      avatarUrl: null,
+      timezone: "America/Toronto",
+      streak: { current: 2, longest: 6 },
+      game: makeGameStats(state.peerHeatmaps[IDS.marcus] ?? [], 2, 3),
+      stats: {
+        totalStudySeconds: (state.peerHeatmaps[IDS.marcus] ?? []).reduce((sum, cell) => sum + cell.value, 0),
+        last30DaysSeconds: (state.peerHeatmaps[IDS.marcus] ?? []).slice(-30).reduce((sum, cell) => sum + cell.value, 0),
+        completedItems: 6,
+        groupsCount: 1,
+        coursesCount: 1,
+      },
+      sharedGroups: state.groups.map((group) => ({
+        id: group.id,
+        name: group.name,
+        inviteCode: group.inviteCode,
+      })),
+      sharedCourses: state.courses.map((course) => ({
+        id: course.id,
+        code: course.code,
+        name: course.name,
+      })),
+      strengths: buildStrengthsForUser(IDS.marcus),
+      heatmap: state.peerHeatmaps[IDS.marcus] ?? [],
+      recentActivity: flattenRecentActivityForUser(IDS.marcus),
+    },
+  } as const;
+
+  const profile = profileMap[userId as keyof typeof profileMap];
+  if (!profile) throw new Error("not_found");
+  return profile;
+}
+
 function buildSeededHeatmap(seed: number): HeatmapRow[] {
   return Array.from({ length: 84 }, (_, index) => {
     const date = daysAgoIso(83 - index);
@@ -670,6 +810,8 @@ function applyStoppedSession(session: ActiveSession, durationSeconds: number, en
     state.personalHeatmap.sort((a, b) => a.date.localeCompare(b.date));
   }
 
+  state.me.game = makeGameStats(state.personalHeatmap, state.me.streak.current, 2);
+
   for (const group of state.groups) {
     if (!group.members.some((item) => item.id === state.me.id)) continue;
     const entry: FeedItem = {
@@ -691,14 +833,20 @@ function applyStoppedSession(session: ActiveSession, durationSeconds: number, en
     const week = state.leaderboard[group.id]?.week;
     if (week) {
       const me = week.find((item) => item.userId === state.me.id);
-      if (me) me.totalSeconds += durationSeconds;
+      if (me) {
+        me.totalSeconds += durationSeconds;
+        refreshLeaderboardEntry(me);
+      }
       week.sort((a, b) => b.totalSeconds - a.totalSeconds);
     }
 
     const month = state.leaderboard[group.id]?.month;
     if (month) {
       const me = month.find((item) => item.userId === state.me.id);
-      if (me) me.totalSeconds += durationSeconds;
+      if (me) {
+        me.totalSeconds += durationSeconds;
+        refreshLeaderboardEntry(me);
+      }
       month.sort((a, b) => b.totalSeconds - a.totalSeconds);
     }
   }
@@ -708,6 +856,7 @@ function applyStoppedSession(session: ActiveSession, durationSeconds: number, en
 
 function prependFeedItemForProgress(course: CourseDetail, item: CourseItem, completed: boolean) {
   if (!completed) return;
+  state.me.game = makeGameStats(state.personalHeatmap, state.me.streak.current, 2);
   for (const group of state.groups) {
     if (!group.members.some((member) => member.id === state.me.id)) continue;
     const entry: FeedItem = {
@@ -768,6 +917,113 @@ function createCourseItem(
     classCompleters,
     classCompletionRate: classCompleters / memberCount,
   };
+}
+
+function buildStrengthsForUser(userId: string) {
+  const base = userId === IDS.ava
+    ? [
+        { id: IDS.course, code: "CS229", name: "Machine Learning", totalItems: 5, completedItems: 4 },
+        { id: IDS.course2, code: "MATH101", name: "Calculus I", totalItems: 3, completedItems: 2 },
+      ]
+    : userId === IDS.marcus
+      ? [{ id: IDS.course2, code: "MATH101", name: "Calculus I", totalItems: 3, completedItems: 2 }]
+      : state.courses.map((course) => ({
+          id: course.id,
+          code: course.code,
+          name: course.name,
+          totalItems: course.items.length,
+          completedItems: course.items.filter((item) => item.completedAt).length,
+        }));
+
+  return base.map((course) => ({
+    ...course,
+    completionRate: course.totalItems > 0 ? course.completedItems / course.totalItems : 0,
+  }));
+}
+
+function flattenRecentActivityForUser(userId: string) {
+  return Object.values(state.feed)
+    .flat()
+    .filter((item) => item.userId === userId)
+    .sort((a, b) => {
+      const at = a.kind === "session" ? a.endedAt : a.completedAt;
+      const bt = b.kind === "session" ? b.endedAt : b.completedAt;
+      return bt.localeCompare(at);
+    })
+    .slice(0, 12);
+}
+
+function makeLeaderboardEntry(
+  userId: string,
+  displayName: string,
+  avatarUrl: string | null,
+  totalSeconds: number,
+  activeDays7d: number,
+  currentStreak: number,
+  rank: number,
+): LeaderboardEntry {
+  const score = Math.round(totalSeconds / 60 + activeDays7d * 40 + currentStreak * 18);
+  const level = Math.max(1, Math.floor(score / 250) + 1);
+  const nextLevelScore = level * 250;
+  const progress = (score - (level - 1) * 250) / 250;
+  return {
+    userId,
+    displayName,
+    avatarUrl,
+    totalSeconds,
+    activeDays7d,
+    currentStreak,
+    score,
+    level,
+    nextLevelScore,
+    progress,
+    badges: buildBadges(currentStreak, totalSeconds, activeDays7d, rank),
+  };
+}
+
+function refreshLeaderboardEntry(entry: LeaderboardEntry) {
+  const fresh = makeLeaderboardEntry(
+    entry.userId,
+    entry.displayName,
+    entry.avatarUrl,
+    entry.totalSeconds,
+    entry.activeDays7d,
+    entry.currentStreak,
+    2,
+  );
+  Object.assign(entry, fresh);
+}
+
+function makeGameStats(cells: HeatmapRow[], streak: number, rank: number | null): GameStats {
+  const weeklyCells = cells.slice(-7);
+  const weeklySeconds = weeklyCells.reduce((sum, cell) => sum + cell.value, 0);
+  const activeDays7d = weeklyCells.filter((cell) => cell.value > 0).length;
+  const todaySeconds = cells[cells.length - 1]?.value ?? 0;
+  const score = Math.round(weeklySeconds / 60 + activeDays7d * 40 + streak * 18);
+  const level = Math.max(1, Math.floor(score / 250) + 1);
+  const nextLevelScore = level * 250;
+  const progress = (score - (level - 1) * 250) / 250;
+  return {
+    weeklySeconds,
+    activeDays7d,
+    todaySeconds,
+    streak,
+    weeklyGoalSeconds: Math.max(6 * 3600, Math.min(14 * 3600, (8 + Math.min(streak, 6)) * 3600)),
+    score,
+    level,
+    nextLevelScore,
+    progress,
+    badges: buildBadges(streak, weeklySeconds, activeDays7d, rank),
+  };
+}
+
+function buildBadges(streak: number, weeklySeconds: number, activeDays7d: number, rank: number | null) {
+  const badges: GameBadge[] = [];
+  if (streak >= 7) badges.push({ title: "Flame Keeper", tone: "amber", description: `${streak}-day streak alive` });
+  if (weeklySeconds >= 8 * 3600) badges.push({ title: "Deep Work", tone: "emerald", description: "8h+ logged this week" });
+  if (activeDays7d >= 5) badges.push({ title: "Consistent", tone: "sky", description: `${activeDays7d} active days this week` });
+  if (rank === 1) badges.push({ title: "Front Runner", tone: "rose", description: "leading the pack" });
+  return badges.slice(0, 3);
 }
 
 function parseBody(body: RequestInit["body"]) {
