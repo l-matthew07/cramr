@@ -58,49 +58,53 @@ export function Heatmap({
     <div className="relative" ref={containerRef}>
       {label && <div className="text-xs text-ink-400 mb-2">{label}</div>}
 
-      <div className="mb-2 ml-8 flex text-[10px] text-ink-500">
-        {monthLabels.map((month) => (
-          <div
-            key={`${month.label}-${month.week}`}
-            className="shrink-0"
-            style={{ width: month.spanWeeks * (cellSize + gap) }}
-          >
-            {month.label}
+      <div className="overflow-x-auto pb-4 custom-scrollbar">
+        <div className="min-w-max">
+          <div className="mb-2 ml-8 flex text-[10px] text-ink-500">
+            {monthLabels.map((month) => (
+              <div
+                key={`${month.label}-${month.week}`}
+                className="shrink-0"
+                style={{ width: month.spanWeeks * (cellSize + gap) }}
+              >
+                {month.label}
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
 
-      <div className="flex items-start gap-2">
-        <div className="mt-0.5 flex h-[102px] flex-col justify-between text-[10px] text-ink-500">
-          <span>Mon</span>
-          <span>Wed</span>
-          <span>Fri</span>
+          <div className="flex items-start gap-2">
+            <div className="mt-0.5 flex h-[102px] flex-col justify-between text-[10px] text-ink-500">
+              <span>Mon</span>
+              <span>Wed</span>
+              <span>Fri</span>
+            </div>
+
+            <svg width={width} height={height} className="block overflow-visible">
+              {grid.map((col, w) =>
+                col.map((cell, d) => {
+                  const bucket = cell ? bucketize(cell.value, thresholds) : 0;
+                  return (
+                    <rect
+                      key={`${w}-${d}`}
+                      x={w * (cellSize + gap)}
+                      y={d * (cellSize + gap)}
+                      width={cellSize}
+                      height={cellSize}
+                      rx={2}
+                      fill={COLORS[bucket]}
+                      className="cursor-pointer transition-opacity hover:opacity-90"
+                      onMouseMove={(event) => {
+                        if (!cell) return;
+                        setHovered(calcHoverState(event.clientX, event.clientY, cell, containerRef));
+                      }}
+                      onMouseLeave={() => setHovered(null)}
+                    />
+                  );
+                }),
+              )}
+            </svg>
+          </div>
         </div>
-
-        <svg width={width} height={height} className="block overflow-visible">
-          {grid.map((col, w) =>
-            col.map((cell, d) => {
-              const bucket = cell ? bucketize(cell.value, thresholds) : 0;
-              return (
-                <rect
-                  key={`${w}-${d}`}
-                  x={w * (cellSize + gap)}
-                  y={d * (cellSize + gap)}
-                  width={cellSize}
-                  height={cellSize}
-                  rx={2}
-                  fill={COLORS[bucket]}
-                  className="cursor-pointer transition-opacity hover:opacity-90"
-                  onMouseMove={(event) => {
-                    if (!cell) return;
-                    setHovered(calcHoverState(event.clientX, event.clientY, cell, containerRef));
-                  }}
-                  onMouseLeave={() => setHovered(null)}
-                />
-              );
-            }),
-          )}
-        </svg>
       </div>
 
       <HeatmapLegend hovered={hovered} />
@@ -122,40 +126,44 @@ export function GroupHeatmap({
     const all = rows.flatMap((r) => r.cells.map((c) => c.value)).filter((v) => v > 0);
     return quartiles(all);
   }, [rows]);
-  const monthLabels = useMemo(() => buildMonthLabels(weeks), [weeks]);
+  const dayMonthLabels = useMemo(() => buildDayMonthLabels(weeks * 7), [weeks]);
 
   return (
     <div className="relative" ref={containerRef}>
-      <div className="mb-2 ml-[124px] flex text-[10px] text-ink-500">
-        {monthLabels.map((month) => (
-          <div
-            key={`${month.label}-${month.week}`}
-            className="shrink-0"
-            style={{ width: month.spanWeeks * 12 }}
-          >
-            {month.label}
+      <div className="overflow-x-auto pb-4 custom-scrollbar">
+        <div className="min-w-max">
+          <div className="mb-2 ml-[124px] flex text-[10px] text-ink-500">
+            {dayMonthLabels.map((month, i) => (
+              <div
+                key={`${month.label}-${i}`}
+                className="shrink-0"
+                style={{ width: month.spanDays * 12 }}
+              >
+                {month.label}
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
 
-      <div className="flex flex-col gap-1">
-        {rows.map((row) => (
-          <div key={row.id} className="flex items-center gap-3">
-            <div className="w-28 shrink-0 text-xs text-ink-300 truncate">
-              {row.displayName}
-            </div>
-            <SingleRow
-              cells={row.cells}
-              weeks={weeks}
-              thresholds={thresholds}
-              displayName={row.displayName}
-              onHover={(event, cell) =>
-                setHovered(calcHoverState(event.clientX, event.clientY, cell, containerRef, row.displayName))
-              }
-              onLeave={() => setHovered(null)}
-            />
+          <div className="flex flex-col gap-1">
+            {rows.map((row) => (
+              <div key={row.id} className="flex items-center gap-3">
+                <div className="w-28 shrink-0 text-xs text-ink-300 truncate">
+                  {row.displayName}
+                </div>
+                <SingleRow
+                  cells={row.cells}
+                  weeks={weeks}
+                  thresholds={thresholds}
+                  displayName={row.displayName}
+                  onHover={(event, cell) =>
+                    setHovered(calcHoverState(event.clientX, event.clientY, cell, containerRef, row.displayName))
+                  }
+                  onLeave={() => setHovered(null)}
+                />
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
       </div>
 
       <HeatmapLegend hovered={hovered} />
@@ -301,13 +309,34 @@ function buildMonthLabels(weeks: number) {
 
   for (let w = 0; w < weeks; w++) {
     const weekDate = new Date(start);
-    weekDate.setDate(start.getDate() + w * 7);
+    weekDate.setDate(start.getDate() + w * 7 + 3); // Check Thursday/Wednesday to align month boundaries closer to Github
     const label = MONTH_FMT.format(weekDate);
+    
     const prev = labels[labels.length - 1];
     if (prev?.label === label) {
       prev.spanWeeks += 1;
     } else {
       labels.push({ label, week: w, spanWeeks: 1 });
+    }
+  }
+
+  return labels;
+}
+
+function buildDayMonthLabels(days: number) {
+  const start = startDateForWindow(days / 7);
+  const labels: Array<{ label: string; spanDays: number }> = [];
+
+  for (let d = 0; d < days; d++) {
+    const curDate = new Date(start);
+    curDate.setDate(start.getDate() + d);
+    const label = MONTH_FMT.format(curDate);
+    
+    const prev = labels[labels.length - 1];
+    if (prev?.label === label) {
+      prev.spanDays += 1;
+    } else {
+      labels.push({ label, spanDays: 1 });
     }
   }
 

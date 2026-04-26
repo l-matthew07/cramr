@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet } from "react-router-dom";
 import { useMe, useMyCourses, useMyGroups, useActiveSession, isMockApiActive } from "../lib/api";
 import { usePresenceSocket } from "../lib/socket";
 import { UserButton } from "@clerk/clerk-react";
+import { useTheme, getBackgroundImage, getThemeFilter, type ThemeLocation, type ThemeCondition } from "../lib/theme";
 
 const hasClerk = !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
@@ -13,15 +14,23 @@ export function Layout() {
   const active = useActiveSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const previewMode = isMockApiActive();
+  
+  const { location, condition, setLocation, setCondition } = useTheme();
+  const bgImage = getBackgroundImage(location);
+  const bgFilter = getThemeFilter(condition);
 
   // Connect Socket.IO presence channels once layout is mounted
   usePresenceSocket();
 
   return (
-    <div className="min-h-full flex flex-col md:flex-row">
+    <div className="min-h-full flex flex-col md:flex-row text-white">
+      <div 
+        className="fixed inset-0 z-[-1] transition-all duration-1000 bg-center bg-cover bg-no-repeat bg-fixed bg-black"
+        style={{ backgroundImage: `url('${bgImage}')`, filter: bgFilter }}
+      />
       {/* Mobile top bar */}
-      <div className="md:hidden flex items-center justify-between px-4 py-3 border-b border-ink-800 bg-ink-900 sticky top-0 z-30">
-        <Link to="/" className="text-lg font-bold tracking-tight">
+      <div className="md:hidden flex items-center justify-between px-4 py-3 border-b border-white/10 bg-stone-900/60 backdrop-blur-md sticky top-0 z-30 text-white">
+        <Link to="/" className="text-lg font-bold tracking-tight text-white drop-shadow-md">
           Cramr
         </Link>
         <div className="flex items-center gap-3">
@@ -63,15 +72,15 @@ export function Layout() {
       {/* Sidebar */}
       <aside
         className={`
-          fixed inset-y-0 left-0 z-20 w-64 border-r border-ink-800 bg-ink-900 p-4 flex flex-col gap-6
+          fixed inset-y-0 left-0 z-20 w-64 border-r border-white/10 bg-stone-950/60 backdrop-blur-md p-4 flex flex-col gap-6
           transform transition-transform duration-200
-          md:static md:translate-x-0 md:sticky md:top-0 md:h-screen
+          md:static md:translate-x-0 md:sticky md:top-0 md:h-screen text-stone-100
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
         `}
       >
         <Link
           to="/"
-          className="hidden md:block text-xl font-bold tracking-tight"
+          className="hidden md:block text-2xl font-bold tracking-tight text-white drop-shadow-md"
           onClick={() => setSidebarOpen(false)}
         >
           Cramr
@@ -129,13 +138,54 @@ export function Layout() {
                 <Link
                   to="/courses/new"
                   onClick={() => setSidebarOpen(false)}
-                  className="text-ink-500 text-xs hover:text-ink-300"
+                  className="text-stone-400 text-xs hover:text-stone-200"
                 >
                   Create your first course →
                 </Link>
               )}
           </div>
         </div>
+
+        <SideSection title="Location">
+          <select 
+            className="w-full bg-stone-900/50 border border-white/10 rounded-xl text-xs px-3 py-2 text-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-500/50 hover:bg-stone-800/50 transition-colors"
+            value={location}
+            onChange={(e) => setLocation(e.target.value as ThemeLocation)}
+          >
+            <option value="country">Country View</option>
+            <optgroup label="City View from Cafe">
+              <option value="cafe_la">Los Angeles</option>
+              <option value="cafe_sf">San Francisco</option>
+              <option value="cafe_chicago">Chicago</option>
+              <option value="cafe_ny">New York</option>
+              <option value="cafe_vancouver">Vancouver</option>
+              <option value="cafe_toronto">Toronto</option>
+            </optgroup>
+            <optgroup label="High Rise Apartment">
+              <option value="apt_la">Los Angeles</option>
+              <option value="apt_sf">San Francisco</option>
+              <option value="apt_chicago">Chicago</option>
+              <option value="apt_ny">New York</option>
+              <option value="apt_vancouver">Vancouver</option>
+              <option value="apt_toronto">Toronto</option>
+            </optgroup>
+          </select>
+        </SideSection>
+
+        <SideSection title="Condition">
+          <select 
+            className="w-full bg-stone-900/50 border border-white/10 rounded-xl text-xs px-3 py-2 text-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-500/50 hover:bg-stone-800/50 transition-colors"
+            value={condition}
+            onChange={(e) => setCondition(e.target.value as ThemeCondition)}
+          >
+            <option value="auto">Auto (Syncs with time)</option>
+            <option value="sunny">Sunny (Default)</option>
+            <option value="night">Night Mode</option>
+            <option value="rainy">Rainy</option>
+            <option value="sunset">Sunset</option>
+            <option value="sunrise">Sunrise</option>
+          </select>
+        </SideSection>
 
         <div className="mt-auto flex items-center gap-2">
           {hasClerk ? (
@@ -171,10 +221,10 @@ export function Layout() {
 function SideSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <div className="text-[11px] uppercase tracking-wider text-ink-500 mb-1">
+      <div className="text-[11px] font-bold uppercase tracking-wider text-stone-400 mb-2">
         {title}
       </div>
-      <div className="flex flex-col gap-0.5">{children}</div>
+      <div className="flex flex-col gap-1">{children}</div>
     </div>
   );
 }
@@ -194,8 +244,8 @@ function SideLink({
       end
       onClick={onClick}
       className={({ isActive }) =>
-        `px-2 py-1.5 rounded text-ink-300 hover:bg-ink-800 text-sm ${
-          isActive ? "bg-ink-800 text-ink-100" : ""
+        `px-3 py-2 rounded-xl text-stone-300 hover:bg-stone-800/40 hover:text-stone-100 text-sm font-medium transition-colors ${
+          isActive ? "bg-stone-800/60 text-white shadow-inner border border-white/5" : ""
         }`
       }
     >
