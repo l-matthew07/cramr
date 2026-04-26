@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import { useTheme, resolveCondition } from "../lib/theme";
 
 export interface HeatmapCell {
   date: string; // YYYY-MM-DD
@@ -28,7 +29,16 @@ type HoverState = {
   displayName?: string;
 };
 
-const COLORS = ["#1a1a1d", "#14432a", "#1d6b3b", "#2ea043", "#56d364"];
+const COLORS_DEFAULT = ["#1a1a1d", "#14432a", "#1d6b3b", "#2ea043", "#56d364"];
+// Lighter palette for dark backgrounds (night / rainy) so empty cells don't disappear.
+const COLORS_DARK_BG = ["#52525a", "#4ade80", "#86efac", "#bbf7d0", "#dcfce7"];
+
+function useHeatmapColors() {
+  const { condition } = useTheme();
+  const active = resolveCondition(condition);
+  return active === "night" || active === "rainy" ? COLORS_DARK_BG : COLORS_DEFAULT;
+}
+
 const MONTH_FMT = new Intl.DateTimeFormat("en-US", { month: "short" });
 const DATE_FMT = new Intl.DateTimeFormat("en-US", {
   weekday: "long",
@@ -46,6 +56,7 @@ export function Heatmap({
 }: HeatmapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [hovered, setHovered] = useState<HoverState | null>(null);
+  const COLORS = useHeatmapColors();
   const { grid, thresholds, monthLabels } = useMemo(
     () => buildGrid(cells, weeks),
     [cells, weeks],
@@ -107,7 +118,7 @@ export function Heatmap({
         </div>
       </div>
 
-      <HeatmapLegend hovered={hovered} />
+      <HeatmapLegend hovered={hovered} colors={COLORS} />
       <HeatmapTooltip hovered={hovered} />
     </div>
   );
@@ -122,6 +133,7 @@ export function GroupHeatmap({
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [hovered, setHovered] = useState<HoverState | null>(null);
+  const COLORS = useHeatmapColors();
   const thresholds = useMemo(() => {
     const all = rows.flatMap((r) => r.cells.map((c) => c.value)).filter((v) => v > 0);
     return quartiles(all);
@@ -154,6 +166,7 @@ export function GroupHeatmap({
                   cells={row.cells}
                   weeks={weeks}
                   thresholds={thresholds}
+                  colors={COLORS}
                   displayName={row.displayName}
                   onHover={(event, cell) =>
                     setHovered(calcHoverState(event.clientX, event.clientY, cell, containerRef, row.displayName))
@@ -166,7 +179,7 @@ export function GroupHeatmap({
         </div>
       </div>
 
-      <HeatmapLegend hovered={hovered} />
+      <HeatmapLegend hovered={hovered} colors={COLORS} />
       <HeatmapTooltip hovered={hovered} />
     </div>
   );
@@ -176,6 +189,7 @@ function SingleRow({
   cells,
   weeks,
   thresholds,
+  colors,
   displayName,
   onHover,
   onLeave,
@@ -183,6 +197,7 @@ function SingleRow({
   cells: HeatmapCell[];
   weeks: number;
   thresholds: [number, number, number, number];
+  colors: string[];
   displayName: string;
   onHover: (event: React.MouseEvent<HTMLSpanElement>, cell: HeatmapCell) => void;
   onLeave: () => void;
@@ -204,7 +219,7 @@ function SingleRow({
           <span
             key={`${displayName}-${cell.date}`}
             className="inline-block h-2.5 w-2.5 cursor-pointer rounded-sm transition-opacity hover:opacity-90"
-            style={{ background: COLORS[bucket] }}
+            style={{ background: colors[bucket] }}
             onMouseMove={(event) => onHover(event, cell)}
             onMouseLeave={onLeave}
           />
@@ -214,7 +229,7 @@ function SingleRow({
   );
 }
 
-function HeatmapLegend({ hovered }: { hovered: HoverState | null }) {
+function HeatmapLegend({ hovered, colors }: { hovered: HoverState | null; colors: string[] }) {
   return (
     <div className="mt-3 flex items-center justify-between gap-3 text-[10px] text-ink-500">
       <div className="min-h-[16px] text-[11px] text-ink-400">
@@ -222,7 +237,7 @@ function HeatmapLegend({ hovered }: { hovered: HoverState | null }) {
       </div>
       <div className="flex items-center gap-1">
         <span>less</span>
-        {COLORS.map((c) => (
+        {colors.map((c) => (
           <span
             key={c}
             className="inline-block h-2.5 w-2.5 rounded-sm"

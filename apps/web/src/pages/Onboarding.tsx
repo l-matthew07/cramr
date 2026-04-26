@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCreateGroup, useJoinCourse, useJoinGroup, useMe, useUpdateMe } from "../lib/api";
 
@@ -79,37 +79,103 @@ function Progress({ step }: { step: Step }) {
 function NameStep({ onNext }: { onNext: () => void }) {
   const me = useMe();
   const updateMe = useUpdateMe();
+  const [displayName, setDisplayName] = useState(me.data?.displayName ?? "");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(me.data?.avatarUrl ?? null);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
   const [tz, setTz] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
   const [saving, setSaving] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setAvatarError(null);
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setAvatarError("Please choose an image file.");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setAvatarError("Image must be smaller than 2 MB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setAvatarUrl(typeof reader.result === "string" ? reader.result : null);
+    reader.onerror = () => setAvatarError("Could not read that file.");
+    reader.readAsDataURL(file);
+  }
 
   return (
     <div className="flex flex-col gap-4">
       <div>
         <h1 className="text-2xl font-semibold">Welcome to Cramr</h1>
         <p className="text-sm text-ink-400 mt-1">
-          Let's get your timezone right — heatmaps depend on it.
+          Pick a name and timezone — your classmates will see this on leaderboards and feeds.
         </p>
       </div>
-      <label className="text-xs text-ink-400">
-        Timezone
-        <select
-          className="block mt-1 bg-ink-800 border border-ink-700 rounded-md text-sm px-3 py-2 w-full"
-          value={tz}
-          onChange={(e) => setTz(e.target.value)}
+
+      <div className="flex items-center gap-4">
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          className="relative h-16 w-16 shrink-0 rounded-full border-2 border-dashed border-ink-700 bg-ink-800 overflow-hidden flex items-center justify-center text-ink-500 hover:border-emerald-600 hover:text-emerald-400 transition-colors"
+          aria-label="Upload profile picture"
         >
-          {ALL_TZS.map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </select>
+          {avatarUrl ? (
+            <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <span className="text-xs">Upload</span>
+          )}
+        </button>
+        <div className="flex flex-col gap-1">
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            className="text-xs text-emerald-500 hover:text-emerald-400 self-start"
+          >
+            {avatarUrl ? "Change picture" : "Add a profile picture (optional)"}
+          </button>
+          {avatarUrl && (
+            <button
+              type="button"
+              onClick={() => setAvatarUrl(null)}
+              className="text-xs text-ink-500 hover:text-ink-300 self-start"
+            >
+              Remove
+            </button>
+          )}
+          {avatarError && <div className="text-xs text-red-400">{avatarError}</div>}
+        </div>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          onChange={handleAvatarChange}
+          className="hidden"
+        />
+      </div>
+
+      <label className="text-xs text-ink-400">
+        Display name
+        <input
+          value={displayName}
+          onChange={(e) => setDisplayName(e.target.value)}
+          placeholder="What should we call you?"
+          className="block mt-1 bg-ink-800 border border-ink-700 rounded-md text-sm px-3 py-2 w-full"
+        />
       </label>
+
+      <TimezonePicker value={tz} onChange={setTz} />
+
       <button
-        disabled={saving}
+        disabled={saving || !displayName.trim()}
         onClick={async () => {
           setSaving(true);
           try {
-            await updateMe.mutateAsync({ timezone: tz });
+            await updateMe.mutateAsync({
+              displayName: displayName.trim(),
+              timezone: tz,
+              avatarUrl,
+            });
             me.refetch();
             onNext();
           } finally {
@@ -120,6 +186,71 @@ function NameStep({ onNext }: { onNext: () => void }) {
       >
         {saving ? "Saving…" : "Next →"}
       </button>
+    </div>
+  );
+}
+
+function TimezonePicker({ value, onChange }: { value: string; onChange: (tz: string) => void }) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return ALL_TZS.slice(0, 50);
+    return ALL_TZS.filter((t) => t.toLowerCase().includes(q)).slice(0, 50);
+  }, [query]);
+
+  return (
+    <div className="text-xs text-ink-400" ref={wrapRef}>
+      <label className="block">Timezone</label>
+      <div className="relative mt-1">
+        <input
+          type="text"
+          value={open ? query : value}
+          placeholder="Search timezone (e.g. tokyo, pacific)…"
+          onFocus={() => {
+            setOpen(true);
+            setQuery("");
+          }}
+          onBlur={() => {
+            // Small delay so click on a result still registers.
+            setTimeout(() => setOpen(false), 120);
+          }}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            if (!open) setOpen(true);
+          }}
+          className="bg-ink-800 border border-ink-700 rounded-md text-sm px-3 py-2 w-full text-ink-100 placeholder:text-ink-600 focus:outline-none focus:border-emerald-700"
+        />
+        {open && (
+          <ul className="absolute z-20 left-0 right-0 mt-1 max-h-60 overflow-y-auto rounded-md border border-ink-700 bg-ink-900 shadow-2xl">
+            {filtered.length === 0 ? (
+              <li className="px-3 py-2 text-ink-500 text-sm">No matches</li>
+            ) : (
+              filtered.map((t) => (
+                <li key={t}>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      // Prevent input blur before click.
+                      e.preventDefault();
+                      onChange(t);
+                      setOpen(false);
+                      setQuery("");
+                    }}
+                    className={`w-full text-left px-3 py-2 text-sm hover:bg-ink-800 ${
+                      t === value ? "text-emerald-400" : "text-ink-200"
+                    }`}
+                  >
+                    {t}
+                  </button>
+                </li>
+              ))
+            )}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }

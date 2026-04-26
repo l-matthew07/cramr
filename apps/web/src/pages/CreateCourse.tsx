@@ -104,10 +104,10 @@ export function CreateCourse() {
       </div>
 
       {step === "info" && (
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-5 rounded-3xl border border-white/10 bg-stone-900/60 backdrop-blur-md shadow-2xl p-6">
           <div>
-            <h1 className="text-2xl font-semibold">Create a course</h1>
-            <p className="text-sm text-ink-400 mt-1">
+            <h1 className="text-2xl font-semibold text-stone-100 drop-shadow-md">Create a course</h1>
+            <p className="text-sm text-stone-300 drop-shadow-sm mt-1">
               Your classmates can join by searching for the course code.
             </p>
           </div>
@@ -169,10 +169,10 @@ export function CreateCourse() {
       )}
 
       {step === "import" && (
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-5 rounded-3xl border border-white/10 bg-stone-900/60 backdrop-blur-md shadow-2xl p-6">
           <div>
-            <h1 className="text-2xl font-semibold">Import course outline</h1>
-            <p className="text-sm text-ink-400 mt-1">
+            <h1 className="text-2xl font-semibold text-stone-100 drop-shadow-md">Import course outline</h1>
+            <p className="text-sm text-stone-300 drop-shadow-sm mt-1">
               Paste your syllabus or course schedule below. We'll extract lectures,
               assignments, and exams automatically.
             </p>
@@ -301,11 +301,11 @@ export function CreateCourse() {
       )}
 
       {step === "done" && createdId && (
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-5 rounded-3xl border border-white/10 bg-stone-900/60 backdrop-blur-md shadow-2xl p-6">
           <div>
             <div className="text-3xl mb-3">🎓</div>
-            <h1 className="text-2xl font-semibold">Course created!</h1>
-            <p className="text-sm text-ink-400 mt-1">
+            <h1 className="text-2xl font-semibold text-stone-100 drop-shadow-md">Course created!</h1>
+            <p className="text-sm text-stone-300 drop-shadow-sm mt-1">
               Share the code below with your classmates so they can join.
             </p>
           </div>
