@@ -71,7 +71,12 @@ function Shell() {
       </div>
     );
   }
-  const needsOnboarding = me.data && !me.data.onboarded;
+  const userId = me.data?.id;
+  const finishedOnboarding =
+    typeof window !== "undefined" && userId
+      ? localStorage.getItem(`cramr.onboarded.${userId}`) === "1"
+      : false;
+  const needsOnboarding = me.data && !me.data.onboarded && !finishedOnboarding;
 
   return (
     <Routes>

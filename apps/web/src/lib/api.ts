@@ -110,6 +110,15 @@ export function useUpdateMe() {
   });
 }
 
+export function useMarkOnboarded() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api<{ ok: true }>("/api/me/onboarded", { method: "POST" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["me"] }),
+  });
+}
+
 export interface ActiveSession {
   id: string;
   userId: string;
@@ -312,6 +321,8 @@ export interface GroupDetail {
   id: string;
   name: string;
   inviteCode: string;
+  viewerRole: string;
+  pendingRequestCount: number;
   members: Array<{
     id: string;
     displayName: string;
@@ -368,6 +379,27 @@ export function useUserProfile(id: string | undefined) {
   });
 }
 
+export interface GroupJoinRequest {
+  id: string;
+  status: "pending" | "approved" | "rejected";
+  requestedAt: string;
+  reviewedAt?: string | null;
+  group: {
+    id: string;
+    name: string;
+    inviteCode: string;
+  };
+}
+
+export interface IncomingGroupJoinRequest extends GroupJoinRequest {
+  requester: {
+    id: string;
+    displayName: string;
+    avatarUrl: string | null;
+    email: string;
+  };
+}
+
 export function useCreateGroup() {
   const api = useApi();
   const qc = useQueryClient();
@@ -384,17 +416,72 @@ export function useCreateGroup() {
   });
 }
 
-export function useJoinGroup() {
+export function useRequestGroupJoin() {
   const api = useApi();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (inviteCode: string) =>
-      api<GroupSummary>("/api/groups/join", {
+      api<
+        | {
+            status: "already_member";
+            group: { id: string; name: string; inviteCode: string };
+          }
+        | {
+            status: "pending";
+            request: {
+              id: string;
+              groupId: string;
+              groupName: string;
+              inviteCode: string;
+              requestedAt: string;
+            };
+          }
+      >("/api/groups/join", {
         method: "POST",
         body: JSON.stringify({ inviteCode }),
       }),
     onSuccess: () => {
       track("group_joined");
+      qc.invalidateQueries();
+    },
+  });
+}
+
+export function useIncomingGroupJoinRequests() {
+  const api = useApi();
+  return useQuery({
+    queryKey: ["groups", "requests", "incoming"],
+    queryFn: () => api<IncomingGroupJoinRequest[]>("/api/groups/requests/incoming"),
+  });
+}
+
+export function useMyGroupJoinRequests() {
+  const api = useApi();
+  return useQuery({
+    queryKey: ["groups", "requests", "mine"],
+    queryFn: () => api<GroupJoinRequest[]>("/api/groups/requests/mine"),
+  });
+}
+
+export function useApproveGroupJoinRequest() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (requestId: string) =>
+      api<{ ok: true }>(`/api/groups/requests/${requestId}/approve`, { method: "POST" }),
+    onSuccess: () => {
+      qc.invalidateQueries();
+    },
+  });
+}
+
+export function useRejectGroupJoinRequest() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (requestId: string) =>
+      api<{ ok: true }>(`/api/groups/requests/${requestId}/reject`, { method: "POST" }),
+    onSuccess: () => {
       qc.invalidateQueries();
     },
   });

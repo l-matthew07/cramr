@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@cramr/db";
 import { requireUser } from "../middleware/auth.js";
 import { HttpError } from "../middleware/error.js";
@@ -22,7 +23,7 @@ leaderboardRouter.get("/group/:id", async (req, res, next) => {
     const today = todayInTz(req.user!.timezone);
     const start = addDays(today, -days + 1);
 
-    const rows = await prisma.$queryRawUnsafe<
+    const rows = await prisma.$queryRaw<
       Array<{
         user_id: string;
         display_name: string;
@@ -31,8 +32,8 @@ leaderboardRouter.get("/group/:id", async (req, res, next) => {
         active_days: bigint;
         current_streak: number | null;
       }>
-    >(
-      `SELECT u.id AS user_id, u.display_name, u.avatar_url,
+    >(Prisma.sql`
+      SELECT u.id AS user_id, u.display_name, u.avatar_url,
               COALESCE(SUM(da.total_seconds), 0)::bigint AS total_seconds,
               COUNT(da.activity_date)::bigint AS active_days,
               s.current_length AS current_streak
@@ -40,15 +41,11 @@ leaderboardRouter.get("/group/:id", async (req, res, next) => {
          JOIN users u ON u.id = gm.user_id
     LEFT JOIN daily_activity da
            ON da.user_id = u.id
-          AND da.activity_date BETWEEN $2::date AND $3::date
+          AND da.activity_date BETWEEN CAST(${start} AS date) AND CAST(${today} AS date)
     LEFT JOIN streaks s ON s.user_id = u.id
-        WHERE gm.group_id = $1::uuid
+        WHERE gm.group_id = CAST(${id} AS uuid)
         GROUP BY u.id, u.display_name, u.avatar_url, s.current_length
-        ORDER BY total_seconds DESC`,
-      id,
-      start,
-      today,
-    );
+        ORDER BY total_seconds DESC`);
 
     res.json(
       rows.map((r, index) => {

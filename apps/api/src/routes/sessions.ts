@@ -16,6 +16,12 @@ sessionsRouter.post("/start", async (req, res, next) => {
   try {
     const userId = requireUser(req);
     const { courseId } = StartSessionSchema.parse(req.body ?? {});
+    if (courseId) {
+      const membership = await prisma.courseMembership.findUnique({
+        where: { userId_courseId: { userId, courseId } },
+      });
+      if (!membership) throw new HttpError(403, "not_a_member");
+    }
     try {
       const session = await prisma.studySession.create({
         data: {

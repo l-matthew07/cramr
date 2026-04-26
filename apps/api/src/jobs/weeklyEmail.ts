@@ -1,5 +1,6 @@
 import { prisma } from "@cramr/db";
 import { sendEmail } from "../lib/email.js";
+import { escapeHtml } from "../lib/html.js";
 import { addDays, todayInTz } from "../lib/time.js";
 
 /**
@@ -59,7 +60,7 @@ async function runWeeklyEmails() {
         to: user.email,
         subject: `Your Cramr week: ${thisHours}h studied`,
         html: `
-          <p>Hey ${user.displayName},</p>
+          <p>Hey ${escapeHtml(user.displayName)},</p>
           <p>Last week you studied <strong>${thisHours} hours</strong> (${diffStr}).</p>
           ${thisHours === 0 ? "<p>A fresh week starts today — open Cramr and start a session. ⏱</p>" : "<p>Keep the momentum going this week!</p>"}
           <p>— Cramr</p>

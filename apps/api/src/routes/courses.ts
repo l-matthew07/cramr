@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@cramr/db";
 import { JoinCourseSchema } from "@cramr/shared";
@@ -6,6 +7,13 @@ import { requireUser } from "../middleware/auth.js";
 import { HttpError } from "../middleware/error.js";
 
 export const coursesRouter = Router();
+
+async function requireCourseMembership(userId: string, courseId: string) {
+  const membership = await prisma.courseMembership.findUnique({
+    where: { userId_courseId: { userId, courseId } },
+  });
+  if (!membership) throw new HttpError(403, "not_a_member");
+}
 
 coursesRouter.get("/", async (req, res) => {
   const userId = requireUser(req);
@@ -39,6 +47,7 @@ coursesRouter.get("/:id", async (req, res, next) => {
     const userId = requireUser(req);
     const { id } = req.params;
     if (!id) throw new HttpError(400, "missing_id");
+    await requireCourseMembership(userId, id);
     const course = await prisma.course.findUnique({
       where: { id },
       include: {
@@ -55,19 +64,17 @@ coursesRouter.get("/:id", async (req, res, next) => {
     const doneByItem = new Map(myCompletions.map((p) => [p.courseItemId, p.completedAt]));
 
     // Aggregate: how many course members have completed each item.
-    const aggregate = await prisma.$queryRawUnsafe<
+    const aggregate = await prisma.$queryRaw<
       Array<{ course_item_id: string; completers: bigint }>
-    >(
-      `SELECT pe.course_item_id, COUNT(DISTINCT pe.user_id) AS completers
+    >(Prisma.sql`
+      SELECT pe.course_item_id, COUNT(DISTINCT pe.user_id) AS completers
          FROM progress_events pe
          JOIN course_memberships cm ON cm.user_id = pe.user_id
-        WHERE cm.course_id = $1::uuid
+        WHERE cm.course_id = CAST(${id} AS uuid)
           AND pe.course_item_id IN (
-            SELECT id FROM course_items WHERE course_id = $1::uuid
+            SELECT id FROM course_items WHERE course_id = CAST(${id} AS uuid)
           )
-        GROUP BY pe.course_item_id`,
-      id,
-    );
+        GROUP BY pe.course_item_id`);
     const completersByItem = new Map(
       aggregate.map((r) => [r.course_item_id, Number(r.completers)]),
     );
@@ -104,19 +111,18 @@ coursesRouter.get("/:id/percentile", async (req, res, next) => {
     const userId = requireUser(req);
     const { id } = req.params;
     if (!id) throw new HttpError(400, "missing_id");
+    await requireCourseMembership(userId, id);
     // % of members the user has completed more items than.
-    const rows = await prisma.$queryRawUnsafe<
+    const rows = await prisma.$queryRaw<
       Array<{ user_id: string; done: bigint }>
-    >(
-      `SELECT cm.user_id, COUNT(pe.id) AS done
+    >(Prisma.sql`
+      SELECT cm.user_id, COUNT(pe.id) AS done
          FROM course_memberships cm
     LEFT JOIN progress_events pe
            ON pe.user_id = cm.user_id
-          AND pe.course_item_id IN (SELECT id FROM course_items WHERE course_id = $1::uuid)
-        WHERE cm.course_id = $1::uuid
-        GROUP BY cm.user_id`,
-      id,
-    );
+          AND pe.course_item_id IN (SELECT id FROM course_items WHERE course_id = CAST(${id} AS uuid))
+        WHERE cm.course_id = CAST(${id} AS uuid)
+        GROUP BY cm.user_id`);
     if (rows.length === 0) return res.json({ percentile: 0, peers: 0 });
     const me = rows.find((r: { user_id: string; done: bigint }) => r.user_id === userId);
     const myScore = me ? Number(me.done) : 0;
@@ -148,6 +154,9 @@ const CreateCourseSchema = z.object({
 
 coursesRouter.post("/", async (req, res, next) => {
   try {
+    if (process.env.NODE_ENV === "production" && process.env.ALLOW_OPEN_COURSE_CREATION !== "1") {
+      throw new HttpError(403, "course_creation_disabled");
+    }
     const userId = requireUser(req);
     const body = CreateCourseSchema.parse(req.body);
     const course = await prisma.course.create({

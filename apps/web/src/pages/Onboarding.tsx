@@ -1,6 +1,13 @@
 import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useCreateGroup, useJoinCourse, useJoinGroup, useMe, useUpdateMe } from "../lib/api";
+import {
+  useCreateGroup,
+  useJoinCourse,
+  useRequestGroupJoin,
+  useMarkOnboarded,
+  useMe,
+  useUpdateMe,
+} from "../lib/api";
 
 // Full IANA timezone list, sorted alphabetically
 const ALL_TZS: string[] = (() => {
@@ -28,6 +35,7 @@ type Step = "name" | "group" | "course" | "done";
 
 export function Onboarding() {
   const me = useMe();
+  const markOnboarded = useMarkOnboarded();
   const [step, setStep] = useState<Step>("name");
   const navigate = useNavigate();
 
@@ -50,13 +58,23 @@ export function Onboarding() {
               Start a session to put your first mark on the heatmap.
             </p>
             <button
-              onClick={() => {
-                me.refetch();
-                navigate("/");
+              onClick={async () => {
+                try {
+                  await markOnboarded.mutateAsync();
+                } catch {
+                  // Non-fatal — Membership-based fallback still applies, and the
+                  // gate also checks the local flag below.
+                }
+                if (me.data?.id) {
+                  localStorage.setItem(`cramr.onboarded.${me.data.id}`, "1");
+                }
+                await me.refetch();
+                navigate("/", { replace: true });
               }}
-              className="px-5 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 font-medium"
+              disabled={markOnboarded.isPending}
+              className="px-5 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 font-medium disabled:opacity-50"
             >
-              Go to dashboard
+              {markOnboarded.isPending ? "Saving…" : "Go to dashboard"}
             </button>
             <button
               onClick={() => setStep("course")}
@@ -179,6 +197,10 @@ function NameStep({ onNext }: { onNext: () => void }) {
       <button
         disabled={saving || !displayName.trim()}
         onClick={async () => {
+          if (avatarUrl?.startsWith("data:")) {
+            setAvatarError("Direct image upload is not available yet. Use no avatar for now.");
+            return;
+          }
           setSaving(true);
           try {
             await updateMe.mutateAsync({
@@ -268,8 +290,9 @@ function TimezonePicker({ value, onChange }: { value: string; onChange: (tz: str
 function GroupStep({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
   const [createName, setCreateName] = useState("My Squad");
   const [joinCode, setJoinCode] = useState("");
+  const [joinNotice, setJoinNotice] = useState<string | null>(null);
   const create = useCreateGroup();
-  const join = useJoinGroup();
+  const join = useRequestGroupJoin();
 
   return (
     <div className="flex flex-col gap-5">
@@ -307,15 +330,21 @@ function GroupStep({ onNext, onBack }: { onNext: () => void; onBack: () => void 
           placeholder="ABCD1234"
           className="bg-ink-800 border border-ink-700 rounded-md text-sm px-3 py-2 uppercase"
         />
+        {joinNotice && <div className="text-xs text-emerald-400">{joinNotice}</div>}
         <button
           onClick={async () => {
             if (!joinCode.trim()) return;
-            await join.mutateAsync(joinCode.trim());
+            const result = await join.mutateAsync(joinCode.trim());
+            setJoinNotice(
+              result.status === "already_member"
+                ? `You're already in ${result.group.name}.`
+                : `Request sent to ${result.request.groupName}. The owner has to approve it.`,
+            );
             onNext();
           }}
           className="self-start px-4 py-2 rounded-md bg-ink-700 hover:bg-ink-600 text-sm font-medium"
         >
-          Join &amp; continue
+          Request access &amp; continue
         </button>
       </div>
 

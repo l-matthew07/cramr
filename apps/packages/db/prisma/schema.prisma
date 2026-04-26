@@ -14,7 +14,8 @@ model User {
   displayName String   @map("display_name")
   avatarUrl   String?  @map("avatar_url")
   timezone    String   @default("UTC")
-  createdAt   DateTime @default(now()) @map("created_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  onboardedAt DateTime? @map("onboarded_at")
 
   sessions          StudySession[]
   progressEvents    ProgressEvent[]
@@ -25,6 +26,8 @@ model User {
   nudges            Nudge[]
   createdGroups     Group[]            @relation("GroupCreator")
   createdCourses    Course[]           @relation("CourseCreator")
+  joinRequestsSent  GroupJoinRequest[] @relation("GroupJoinRequestRequester")
+  joinRequestsReviewed GroupJoinRequest[] @relation("GroupJoinRequestReviewer")
 
   @@map("users")
 }
@@ -82,6 +85,7 @@ model Group {
 
   creator     User              @relation("GroupCreator", fields: [createdBy], references: [id])
   memberships GroupMembership[]
+  joinRequests GroupJoinRequest[]
 
   @@map("groups")
 }
@@ -97,6 +101,25 @@ model GroupMembership {
 
   @@id([userId, groupId])
   @@map("group_memberships")
+}
+
+model GroupJoinRequest {
+  id              String    @id @default(uuid())
+  groupId         String    @map("group_id")
+  requesterUserId String    @map("requester_user_id")
+  status          String    @default("pending") // pending | approved | rejected
+  requestedAt     DateTime  @default(now()) @map("requested_at")
+  reviewedAt      DateTime? @map("reviewed_at")
+  reviewedBy      String?   @map("reviewed_by")
+
+  group      Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  requester  User  @relation("GroupJoinRequestRequester", fields: [requesterUserId], references: [id], onDelete: Cascade)
+  reviewer   User? @relation("GroupJoinRequestReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
+
+  @@unique([groupId, requesterUserId])
+  @@index([requesterUserId, status])
+  @@index([groupId, status])
+  @@map("group_join_requests")
 }
 
 model StudySession {

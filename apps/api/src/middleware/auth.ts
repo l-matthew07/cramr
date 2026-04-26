@@ -15,7 +15,7 @@ declare global {
 export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
   try {
     // Dev shortcut — skip Clerk entirely.
-    if (process.env.DEV_USER_ID) {
+    if (process.env.NODE_ENV !== "production" && process.env.DEV_USER_ID) {
       const user = await prisma.user.upsert({
         where: { id: process.env.DEV_USER_ID },
         update: {},

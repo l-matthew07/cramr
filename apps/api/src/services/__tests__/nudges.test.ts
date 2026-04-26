@@ -17,7 +17,7 @@ vi.mock("@cramr/db", () => ({
     groupMembership: {
       findMany: vi.fn(),
     },
-    $queryRawUnsafe: vi.fn(),
+    $queryRaw: vi.fn(),
   },
 }));
 

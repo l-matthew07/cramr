@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@cramr/db";
 import type { FeedItem } from "@cramr/shared";
 import { requireUser } from "../middleware/auth.js";
@@ -113,7 +114,7 @@ usersRouter.get("/:id/profile", async (req, res, next) => {
           },
         },
       }),
-      prisma.$queryRawUnsafe<
+      prisma.$queryRaw<
         Array<{
           id: string;
           code: string;
@@ -121,8 +122,8 @@ usersRouter.get("/:id/profile", async (req, res, next) => {
           total_items: bigint;
           completed_items: bigint;
         }>
-      >(
-        `SELECT c.id, c.code, c.name,
+      >(Prisma.sql`
+        SELECT c.id, c.code, c.name,
                 COUNT(ci.id)::bigint AS total_items,
                 COUNT(pe.id)::bigint AS completed_items
            FROM course_memberships cm
@@ -131,12 +132,10 @@ usersRouter.get("/:id/profile", async (req, res, next) => {
       LEFT JOIN progress_events pe
              ON pe.user_id = cm.user_id
             AND pe.course_item_id = ci.id
-          WHERE cm.user_id = $1::uuid
+          WHERE cm.user_id = CAST(${id} AS uuid)
           GROUP BY c.id, c.code, c.name
           ORDER BY completed_items DESC, total_items DESC, c.code ASC
-          LIMIT 6`,
-        id,
-      ),
+          LIMIT 6`),
       getUserGameStats(id, user.timezone),
     ]);
 

@@ -18,6 +18,13 @@ if (sentryDsn) {
     integrations: [Sentry.browserTracingIntegration()],
     tracesSampleRate: 0.2,
     environment: import.meta.env.MODE,
+    sendDefaultPii: false,
+    beforeSend(event) {
+      if (event.request?.headers) {
+        delete event.request.headers.authorization;
+      }
+      return event;
+    },
   });
 }
 

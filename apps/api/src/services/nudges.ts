@@ -1,6 +1,8 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "@cramr/db";
 import { addDays, todayInTz } from "../lib/time.js";
 import { sendEmail } from "../lib/email.js";
+import { escapeHtml } from "../lib/html.js";
 
 /**
  * Evaluate nudge rules for a single user and enqueue messages.
@@ -17,6 +19,7 @@ export async function evaluateNudgesForUser(userId: string, timezone: string) {
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, displayName: true } });
   const userEmail = user?.email ?? "";
   const userName = user?.displayName ?? "there";
+  const safeUserName = escapeHtml(userName);
 
   // Rule: streak at risk.
   if (streak && streak.currentLength >= 3 && lastActive && lastActive < today) {
@@ -30,7 +33,7 @@ export async function evaluateNudgesForUser(userId: string, timezone: string) {
     await sendEmail({
       to: userEmail,
       subject: `Don't break your ${streak.currentLength}-day streak 🔥`,
-      html: `<p>Hey ${userName},</p><p>You have a <strong>${streak.currentLength}-day streak</strong> going. Study for even 5 minutes today to keep it alive.</p>`,
+      html: `<p>Hey ${safeUserName},</p><p>You have a <strong>${streak.currentLength}-day streak</strong> going. Study for even 5 minutes today to keep it alive.</p>`,
       text: `Hey ${userName}, you have a ${streak.currentLength}-day streak going. Study today to keep it alive.`,
     });
   }
@@ -43,7 +46,7 @@ export async function evaluateNudgesForUser(userId: string, timezone: string) {
     await sendEmail({
       to: userEmail,
       subject: "Haven't seen you in a while 👋",
-      html: `<p>Hey ${userName},</p><p>You haven't studied in over 2 days. Even 5 minutes counts.</p>`,
+      html: `<p>Hey ${safeUserName},</p><p>You haven't studied in over 2 days. Even 5 minutes counts.</p>`,
       text: `Hey ${userName}, you haven't studied in over 2 days. Come back and keep the habit alive.`,
     });
   }
@@ -62,24 +65,20 @@ export async function evaluateNudgesForUser(userId: string, timezone: string) {
     if (otherIds.length === 0) continue;
 
     // Find course items most group-members have completed but this user hasn't.
-    const laggingItems = await prisma.$queryRawUnsafe<
+    const laggingItems = await prisma.$queryRaw<
       Array<{ course_item_id: string; title: string; completers: bigint }>
-    >(
-      `SELECT ci.id AS course_item_id, ci.title, COUNT(DISTINCT pe.user_id) AS completers
+    >(Prisma.sql`
+      SELECT ci.id AS course_item_id, ci.title, COUNT(DISTINCT pe.user_id) AS completers
          FROM progress_events pe
          JOIN course_items ci ON ci.id = pe.course_item_id
-        WHERE pe.user_id = ANY($1::uuid[])
+        WHERE pe.user_id = ANY(ARRAY[${Prisma.join(otherIds)}]::uuid[])
           AND ci.id NOT IN (
-            SELECT course_item_id FROM progress_events WHERE user_id = $2::uuid
+            SELECT course_item_id FROM progress_events WHERE user_id = CAST(${userId} AS uuid)
           )
         GROUP BY ci.id, ci.title
-       HAVING COUNT(DISTINCT pe.user_id) >= ($3::int)
+       HAVING COUNT(DISTINCT pe.user_id) >= ${Math.max(2, Math.ceil(otherIds.length * 0.6))}
         ORDER BY completers DESC
-        LIMIT 1`,
-      otherIds,
-      userId,
-      Math.max(2, Math.ceil(otherIds.length * 0.6)),
-    );
+        LIMIT 1`);
     if (laggingItems[0]) {
       await prisma.nudge.create({
         data: {
