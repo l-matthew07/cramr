@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useEffect } from "react";
-import { useAuth } from "@clerk/clerk-react";
+import { useAuth, RedirectToSignIn } from "@clerk/clerk-react";
 import { Dashboard } from "./pages/Dashboard";
 import { SessionPage } from "./pages/Session";
 import { GroupPage } from "./pages/Group";
@@ -41,7 +41,7 @@ function AuthedApp() {
     return (
       <Routes>
         <Route path="/sign-in/*" element={<SignIn />} />
-        <Route path="/join/:code" element={<Join />} />
+        <Route path="/join/:code" element={<RedirectToSignIn />} />
         <Route path="*" element={<Navigate to="/sign-in" replace />} />
       </Routes>
     );
