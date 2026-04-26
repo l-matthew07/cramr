@@ -46,14 +46,16 @@ export function getBackgroundImage(location: ThemeLocation): string {
   }
 }
 
+export function resolveCondition(condition: ThemeCondition): Exclude<ThemeCondition, 'auto'> {
+  if (condition !== 'auto') return condition;
+  const hour = new Date().getHours();
+  if (hour >= 17 && hour < 20) return 'sunset';
+  if (hour >= 20 || hour < 6) return 'night';
+  return 'sunny';
+}
+
 export function getThemeFilter(condition: ThemeCondition): string {
-  let activeCondition = condition;
-  if (condition === 'auto') {
-    const hour = new Date().getHours();
-    if (hour >= 17 && hour < 20) activeCondition = 'sunset';
-    else if (hour >= 20 || hour < 6) activeCondition = 'night';
-    else activeCondition = 'sunny';
-  }
+  const activeCondition = resolveCondition(condition);
 
   switch (activeCondition) {
     case 'night': return 'brightness(0.35) contrast(1.1) sepia(0.3) saturate(0.8) hue-rotate(180deg)';
