@@ -50,9 +50,12 @@ export function Onboarding() {
               Start a session to put your first mark on the heatmap.
             </p>
             <button
-              onClick={() => {
-                me.refetch();
-                navigate("/");
+              onClick={async () => {
+                if (me.data?.id) {
+                  localStorage.setItem(`cramr.onboarded.${me.data.id}`, "1");
+                }
+                await me.refetch();
+                navigate("/", { replace: true });
               }}
               className="px-5 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 font-medium"
             >
