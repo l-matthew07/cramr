@@ -36,8 +36,12 @@ export function Onboarding() {
       <div className="w-full max-w-md">
         <Progress step={step} />
         {step === "name" && <NameStep onNext={() => setStep("group")} />}
-        {step === "group" && <GroupStep onNext={() => setStep("course")} />}
-        {step === "course" && <CourseStep onNext={() => setStep("done")} />}
+        {step === "group" && (
+          <GroupStep onNext={() => setStep("course")} onBack={() => setStep("name")} />
+        )}
+        {step === "course" && (
+          <CourseStep onNext={() => setStep("done")} onBack={() => setStep("group")} />
+        )}
         {step === "done" && (
           <div className="text-center flex flex-col gap-4">
             <div className="text-3xl">🎯</div>
@@ -53,6 +57,12 @@ export function Onboarding() {
               className="px-5 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 font-medium"
             >
               Go to dashboard
+            </button>
+            <button
+              onClick={() => setStep("course")}
+              className="text-xs text-ink-500 hover:text-ink-300"
+            >
+              ← Back
             </button>
           </div>
         )}
@@ -255,7 +265,7 @@ function TimezonePicker({ value, onChange }: { value: string; onChange: (tz: str
   );
 }
 
-function GroupStep({ onNext }: { onNext: () => void }) {
+function GroupStep({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
   const [createName, setCreateName] = useState("My Squad");
   const [joinCode, setJoinCode] = useState("");
   const create = useCreateGroup();
@@ -309,14 +319,19 @@ function GroupStep({ onNext }: { onNext: () => void }) {
         </button>
       </div>
 
-      <button onClick={onNext} className="text-xs text-ink-500 self-end hover:text-ink-300">
-        Skip for now
-      </button>
+      <div className="flex items-center justify-between text-xs">
+        <button onClick={onBack} className="text-ink-500 hover:text-ink-300">
+          ← Back
+        </button>
+        <button onClick={onNext} className="text-ink-500 hover:text-ink-300">
+          Skip for now
+        </button>
+      </div>
     </div>
   );
 }
 
-function CourseStep({ onNext }: { onNext: () => void }) {
+function CourseStep({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
   const [code, setCode] = useState("");
   const join = useJoinCourse();
   const [err, setErr] = useState<string | null>(null);
@@ -352,9 +367,14 @@ function CourseStep({ onNext }: { onNext: () => void }) {
           Join &amp; continue
         </button>
       </div>
-      <button onClick={onNext} className="text-xs text-ink-500 self-end hover:text-ink-300">
-        Skip for now
-      </button>
+      <div className="flex items-center justify-between text-xs">
+        <button onClick={onBack} className="text-ink-500 hover:text-ink-300">
+          ← Back
+        </button>
+        <button onClick={onNext} className="text-ink-500 hover:text-ink-300">
+          Skip for now
+        </button>
+      </div>
     </div>
   );
 }
