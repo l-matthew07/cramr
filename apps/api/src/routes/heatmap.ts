@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@cramr/db";
 import { clampHeatmapWindow } from "@cramr/shared";
 import { requireUser } from "../middleware/auth.js";
@@ -49,7 +50,7 @@ heatmapRouter.get("/group/:id", async (req, res, next) => {
       req.query.to as string | undefined,
     );
 
-    const rows = await prisma.$queryRawUnsafe<
+    const rows = await prisma.$queryRaw<
       Array<{
         user_id: string;
         display_name: string;
@@ -57,20 +58,16 @@ heatmapRouter.get("/group/:id", async (req, res, next) => {
         activity_date: Date;
         total_seconds: number;
       }>
-    >(
-      `SELECT u.id AS user_id, u.display_name, u.avatar_url,
+    >(Prisma.sql`
+      SELECT u.id AS user_id, u.display_name, u.avatar_url,
               da.activity_date, da.total_seconds
          FROM group_memberships gm
          JOIN users u ON u.id = gm.user_id
     LEFT JOIN daily_activity da
            ON da.user_id = u.id
-          AND da.activity_date BETWEEN $2::date AND $3::date
-        WHERE gm.group_id = $1::uuid
-        ORDER BY u.display_name, da.activity_date`,
-      id,
-      toDateStr(start),
-      toDateStr(end),
-    );
+          AND da.activity_date BETWEEN CAST(${toDateStr(start)} AS date) AND CAST(${toDateStr(end)} AS date)
+        WHERE gm.group_id = CAST(${id} AS uuid)
+        ORDER BY u.display_name, da.activity_date`);
 
     const byUser = new Map<
       string,
@@ -118,22 +115,18 @@ heatmapRouter.get("/course/:id", async (req, res, next) => {
     const cached = await cacheGet<unknown>(cacheKey);
     if (cached) return res.json(cached);
 
-    const rows = await prisma.$queryRawUnsafe<
+    const rows = await prisma.$queryRaw<
       Array<{ activity_date: Date; total_seconds: bigint; active_users: bigint }>
-    >(
-      `SELECT da.activity_date,
+    >(Prisma.sql`
+      SELECT da.activity_date,
               SUM(da.total_seconds)::bigint AS total_seconds,
               COUNT(DISTINCT da.user_id)::bigint AS active_users
          FROM daily_activity da
          JOIN course_memberships cm ON cm.user_id = da.user_id
-        WHERE cm.course_id = $1::uuid
-          AND da.activity_date BETWEEN $2::date AND $3::date
+        WHERE cm.course_id = CAST(${id} AS uuid)
+          AND da.activity_date BETWEEN CAST(${toDateStr(start)} AS date) AND CAST(${toDateStr(end)} AS date)
         GROUP BY da.activity_date
-        ORDER BY da.activity_date`,
-      id,
-      toDateStr(start),
-      toDateStr(end),
-    );
+        ORDER BY da.activity_date`);
     const out = rows.map((r) => ({
       date: toDateStr(new Date(r.activity_date)),
       value: Number(r.total_seconds ?? 0),

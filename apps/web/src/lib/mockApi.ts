@@ -64,7 +64,19 @@ type GroupDetail = {
   id: string;
   name: string;
   inviteCode: string;
+  viewerRole: string;
+  pendingRequestCount: number;
   members: GroupMember[];
+};
+
+type GroupJoinRequestRecord = {
+  id: string;
+  groupId: string;
+  requesterUserId: string;
+  status: "pending" | "approved" | "rejected";
+  requestedAt: string;
+  reviewedAt: string | null;
+  reviewedBy: string | null;
 };
 
 type ActiveSession = {
@@ -124,6 +136,7 @@ type MockState = {
   feed: Record<string, FeedItem[]>;
   nudges: Nudge[];
   presence: Record<string, PresenceEntry[]>;
+  groupJoinRequests: GroupJoinRequestRecord[];
 };
 
 let mockApiActive = false;
@@ -176,6 +189,11 @@ export async function mockFetch<T>(path: string, init: RequestInit = {}): Promis
       null,
     );
     return clone(state.me) as T;
+  }
+
+  if (url.pathname === "/api/me/onboarded" && method === "POST") {
+    state.me.onboarded = true;
+    return { ok: true } as T;
   }
 
   if (url.pathname === "/api/sessions/active" && method === "GET") {
@@ -343,6 +361,8 @@ export async function mockFetch<T>(path: string, init: RequestInit = {}): Promis
       id: crypto.randomUUID(),
       name,
       inviteCode: randomInviteCode(),
+      viewerRole: "owner",
+      pendingRequestCount: 0,
       members: [
         {
           id: state.me.id,
@@ -388,26 +408,151 @@ export async function mockFetch<T>(path: string, init: RequestInit = {}): Promis
     const inviteCode = String(body.inviteCode ?? "").trim().toUpperCase();
     const group = state.groups.find((item) => item.inviteCode === inviteCode);
     if (!group) throw new Error("group_not_found");
-    if (!group.members.some((item) => item.id === state.me.id)) {
-      group.members = [
-        ...group.members,
-        {
-          id: state.me.id,
-          displayName: state.me.displayName,
-          avatarUrl: state.me.avatarUrl,
-          role: "member",
-          streak: state.me.streak.current,
+    if (group.members.some((item) => item.id === state.me.id)) {
+      return clone({
+        status: "already_member",
+        group: {
+          id: group.id,
+          name: group.name,
+          inviteCode: group.inviteCode,
         },
-      ];
+      }) as T;
     }
+
+    const existing = state.groupJoinRequests.find(
+      (item) => item.groupId === group.id && item.requesterUserId === state.me.id,
+    );
+    const requestedAt = new Date().toISOString();
+
+    if (existing) {
+      existing.status = "pending";
+      existing.requestedAt = requestedAt;
+      existing.reviewedAt = null;
+      existing.reviewedBy = null;
+    } else {
+      state.groupJoinRequests.unshift({
+        id: crypto.randomUUID(),
+        groupId: group.id,
+        requesterUserId: state.me.id,
+        status: "pending",
+        requestedAt,
+        reviewedAt: null,
+        reviewedBy: null,
+      });
+    }
+
     state.me.onboarded = true;
-    return clone(summarizeGroup(group)) as T;
+    const request =
+      existing ??
+      state.groupJoinRequests.find(
+        (item) => item.groupId === group.id && item.requesterUserId === state.me.id,
+      );
+    return clone({
+      status: "pending",
+      request: {
+        id: request?.id ?? crypto.randomUUID(),
+        groupId: group.id,
+        groupName: group.name,
+        inviteCode: group.inviteCode,
+        requestedAt,
+      },
+    }) as T;
+  }
+
+  if (url.pathname === "/api/groups/requests/incoming" && method === "GET") {
+    return clone(
+      state.groupJoinRequests
+        .filter((request) => request.status === "pending")
+        .filter((request) => {
+          const group = findGroup(request.groupId);
+          return group.members.some(
+            (member) => member.id === state.me.id && member.role === "owner",
+          );
+        })
+        .map((request) => {
+          const group = findGroup(request.groupId);
+          const requester = getUserSummary(request.requesterUserId);
+          return {
+            id: request.id,
+            status: request.status,
+            requestedAt: request.requestedAt,
+            reviewedAt: request.reviewedAt,
+            group: {
+              id: group.id,
+              name: group.name,
+              inviteCode: group.inviteCode,
+            },
+            requester,
+          };
+        }),
+    ) as T;
+  }
+
+  if (url.pathname === "/api/groups/requests/mine" && method === "GET") {
+    return clone(
+      state.groupJoinRequests
+        .filter((request) => request.requesterUserId === state.me.id)
+        .map((request) => {
+          const group = findGroup(request.groupId);
+          return {
+            id: request.id,
+            status: request.status,
+            requestedAt: request.requestedAt,
+            reviewedAt: request.reviewedAt,
+            group: {
+              id: group.id,
+              name: group.name,
+              inviteCode: group.inviteCode,
+            },
+          };
+        }),
+    ) as T;
+  }
+
+  const approveMatch = url.pathname.match(/^\/api\/groups\/requests\/([^/]+)\/approve$/);
+  if (approveMatch && method === "POST") {
+    const request = findGroupJoinRequest(approveMatch[1]!);
+    const group = findGroup(request.groupId);
+    const meMember = group.members.find((item) => item.id === state.me.id);
+    if (meMember?.role !== "owner") throw new Error("not_owner");
+    if (request.status !== "pending") throw new Error("request_not_pending");
+
+    request.status = "approved";
+    request.reviewedAt = new Date().toISOString();
+    request.reviewedBy = state.me.id;
+
+    if (!group.members.some((item) => item.id === request.requesterUserId)) {
+      const requester = getUserSummary(request.requesterUserId);
+      group.members.push({
+        id: requester.id,
+        displayName: requester.displayName,
+        avatarUrl: requester.avatarUrl,
+        role: "member",
+        streak: requester.id === IDS.ava ? 7 : requester.id === IDS.marcus ? 2 : 0,
+      });
+    }
+
+    return clone({ ok: true }) as T;
+  }
+
+  const rejectMatch = url.pathname.match(/^\/api\/groups\/requests\/([^/]+)\/reject$/);
+  if (rejectMatch && method === "POST") {
+    const request = findGroupJoinRequest(rejectMatch[1]!);
+    const group = findGroup(request.groupId);
+    const meMember = group.members.find((item) => item.id === state.me.id);
+    if (meMember?.role !== "owner") throw new Error("not_owner");
+    if (request.status !== "pending") throw new Error("request_not_pending");
+
+    request.status = "rejected";
+    request.reviewedAt = new Date().toISOString();
+    request.reviewedBy = state.me.id;
+    return clone({ ok: true }) as T;
   }
 
   const groupMatch = url.pathname.match(/^\/api\/groups\/([^/]+)$/);
   if (groupMatch && method === "GET") {
     const group = findGroup(groupMatch[1]!);
-    return clone(group) as T;
+    return clone(inflateGroupDetail(group)) as T;
   }
 
   const presenceMatch = url.pathname.match(/^\/api\/groups\/([^/]+)\/presence$/);
@@ -518,6 +663,8 @@ function createInitialState(): MockState {
       id: IDS.group,
       name: "Midterm Sprint",
       inviteCode: "DEMO1234",
+      viewerRole: "owner",
+      pendingRequestCount: 0,
       members: [
         {
           id: IDS.me,
@@ -630,6 +777,7 @@ function createInitialState(): MockState {
         },
       ],
     },
+    groupJoinRequests: [],
   };
 }
 
@@ -672,6 +820,51 @@ function summarizeGroup(group: GroupDetail) {
     memberCount: group.members.length,
     role: meMember?.role ?? "member",
   };
+}
+
+function inflateGroupDetail(group: GroupDetail) {
+  const meMember = group.members.find((item) => item.id === state.me.id);
+  return {
+    ...group,
+    viewerRole: meMember?.role ?? "member",
+    pendingRequestCount: state.groupJoinRequests.filter(
+      (request) => request.groupId === group.id && request.status === "pending",
+    ).length,
+  };
+}
+
+function findGroupJoinRequest(id: string) {
+  const request = state.groupJoinRequests.find((item) => item.id === id);
+  if (!request) throw new Error("not_found");
+  return request;
+}
+
+function getUserSummary(userId: string) {
+  if (userId === state.me.id) {
+    return {
+      id: state.me.id,
+      displayName: state.me.displayName,
+      avatarUrl: state.me.avatarUrl,
+      email: state.me.email,
+    };
+  }
+  if (userId === IDS.ava) {
+    return {
+      id: IDS.ava,
+      displayName: "Ava",
+      avatarUrl: null,
+      email: "ava@cramr.local",
+    };
+  }
+  if (userId === IDS.marcus) {
+    return {
+      id: IDS.marcus,
+      displayName: "Marcus",
+      avatarUrl: null,
+      email: "marcus@cramr.local",
+    };
+  }
+  throw new Error("user_not_found");
 }
 
 function buildUserProfile(userId: string) {
@@ -1059,7 +1252,7 @@ function todayIso() {
 }
 
 function randomInviteCode() {
-  return Math.random().toString(36).slice(2, 10).toUpperCase();
+  return Math.random().toString(36).slice(2, 18).toUpperCase();
 }
 
 function clone<T>(value: T): T {

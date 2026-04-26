@@ -7,11 +7,24 @@ import { updateStreak } from "../services/streaks.js";
 
 export const progressRouter = Router();
 
+async function requireCourseItemMembership(userId: string, courseItemId: string) {
+  const item = await prisma.courseItem.findUnique({
+    where: { id: courseItemId },
+    select: { courseId: true },
+  });
+  if (!item) throw new HttpError(404, "not_found");
+  const membership = await prisma.courseMembership.findUnique({
+    where: { userId_courseId: { userId, courseId: item.courseId } },
+  });
+  if (!membership) throw new HttpError(403, "not_a_member");
+}
+
 progressRouter.post("/:courseItemId/complete", async (req, res, next) => {
   try {
     const userId = requireUser(req);
     const { courseItemId } = req.params;
     if (!courseItemId) throw new HttpError(400, "missing_id");
+    await requireCourseItemMembership(userId, courseItemId);
 
     // Idempotent: one row per (user, item).
     const existing = await prisma.progressEvent.findUnique({
@@ -45,6 +58,7 @@ progressRouter.delete("/:courseItemId", async (req, res, next) => {
     const userId = requireUser(req);
     const { courseItemId } = req.params;
     if (!courseItemId) throw new HttpError(400, "missing_id");
+    await requireCourseItemMembership(userId, courseItemId);
     await prisma.progressEvent.deleteMany({ where: { userId, courseItemId } });
     // Note: we don't decrement items_completed in daily_activity on undo — it's a
     // cumulative activity signal, not a live state. The heatmap is still correct.

@@ -66,6 +66,23 @@ export function GroupPage() {
         groupName={group.data.name}
       />
 
+      {group.data.viewerRole === "owner" && group.data.pendingRequestCount > 0 ? (
+        <section className="rounded-2xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              {group.data.pendingRequestCount} join request
+              {group.data.pendingRequestCount === 1 ? "" : "s"} waiting for approval.
+            </div>
+            <Link
+              to="/profile"
+              className="rounded-md border border-amber-300/30 bg-amber-400/10 px-3 py-1.5 text-xs font-medium hover:bg-amber-400/20"
+            >
+              Review requests
+            </Link>
+          </div>
+        </section>
+      ) : null}
+
       <section className="rounded-3xl border border-white/10 bg-stone-900/60 backdrop-blur-md shadow-2xl p-5">
         <div className="flex items-center justify-between mb-3">
           <div className="text-sm font-medium">Leaderboard</div>
