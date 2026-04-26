@@ -62,71 +62,71 @@ export function DashboardGameCard({
   ];
 
   return (
-    <section className="rounded-[28px] border border-emerald-900/50 bg-[radial-gradient(circle_at_top_left,_rgba(74,222,128,0.18),_transparent_38%),linear-gradient(135deg,_rgba(8,12,10,0.98),_rgba(14,30,20,0.94))] p-5">
-      <div className="flex flex-col gap-5">
+    <section className="rounded-3xl border border-white/10 bg-stone-900/60 backdrop-blur-md shadow-2xl p-6">
+      <div className="flex flex-col gap-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <div className="text-[11px] uppercase tracking-[0.25em] text-emerald-300/75">
+            <div className="text-[11px] uppercase tracking-[0.25em] text-orange-200/75 font-semibold">
               Study Season
             </div>
             <div className="mt-2 flex items-end gap-3">
-              <div className="text-4xl font-semibold text-white">Lvl {level.level}</div>
-              <div className="pb-1 text-sm text-emerald-100/70">{level.score} score</div>
+              <div className="text-4xl font-semibold text-white drop-shadow-md">Lvl {level.level}</div>
+              <div className="pb-1 text-sm text-stone-200/70 font-medium">{level.score} score</div>
             </div>
-            <p className="mt-2 max-w-xl text-sm text-emerald-50/80">
+            <p className="mt-2 max-w-xl text-sm text-stone-100/90 leading-relaxed">
               Build momentum every day, stack streak bonuses, and chase the next person above you.
             </p>
           </div>
           {rank && (
-            <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-right">
-              <div className="text-[11px] uppercase tracking-[0.18em] text-emerald-100/55">
+            <div className="rounded-2xl border border-white/10 bg-stone-950/40 shadow-inner px-5 py-4 text-right">
+              <div className="text-[11px] uppercase tracking-[0.18em] text-stone-300/70 font-medium">
                 {groupName ?? "Current league"}
               </div>
-              <div className="mt-1 text-2xl font-semibold text-white">
+              <div className="mt-1 text-3xl font-semibold text-orange-200 drop-shadow-sm">
                 #{rank.rank}
               </div>
-              <div className="text-xs text-emerald-100/65">
+              <div className="text-xs text-stone-400 font-medium mt-1">
                 of {rank.total}
               </div>
             </div>
           )}
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
-          <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-            <div className="flex items-center justify-between text-xs uppercase tracking-[0.18em] text-emerald-100/55">
+        <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
+          <div className="rounded-3xl border border-white/5 bg-stone-950/30 shadow-inner p-5">
+            <div className="flex items-center justify-between text-xs uppercase tracking-[0.18em] text-stone-300/70 font-semibold">
               <span>Level progress</span>
-              <span>{Math.round(level.progress * 100)}%</span>
+              <span className="text-orange-200">{Math.round(level.progress * 100)}%</span>
             </div>
-            <div className="mt-3 h-3 overflow-hidden rounded-full bg-white/10">
+            <div className="mt-3 h-3.5 overflow-hidden rounded-full bg-stone-900/50 shadow-inner border border-white/5">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-lime-300 via-emerald-400 to-green-500"
+                className="h-full rounded-full bg-gradient-to-r from-orange-400 via-amber-500 to-yellow-400 shadow-[0_0_10px_rgba(245,158,11,0.5)]"
                 style={{ width: `${Math.max(6, level.progress * 100)}%` }}
               />
             </div>
-            <div className="mt-3 grid gap-3 sm:grid-cols-3">
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
               <StatChip label="This week" value={fmtDuration(weeklySeconds)} />
               <StatChip label="Active days" value={`${activeDays7d}/7`} />
               <StatChip label="Streak bonus" value={`+${streak * 18}`} />
             </div>
 
             {rank ? (
-              <div className="mt-4 rounded-2xl border border-emerald-400/20 bg-emerald-400/5 p-4">
-                <div className="text-[11px] uppercase tracking-[0.18em] text-emerald-200/70">
+              <div className="mt-5 rounded-2xl border border-orange-500/30 bg-orange-950/40 backdrop-blur-sm p-5 shadow-lg">
+                <div className="text-[11px] uppercase tracking-[0.18em] text-orange-200/80 font-bold">
                   Rival Target
                 </div>
                 {rank.ahead ? (
                   <>
-                    <div className="mt-2 text-lg font-medium text-white">
+                    <div className="mt-2 text-lg font-semibold text-white">
                       Catch {rank.ahead.displayName}
                     </div>
-                    <p className="mt-1 text-sm text-emerald-50/78">
-                      You are {fmtDuration(rank.gapUp)} behind in the current {groupName ? `${groupName} ` : ""}race.
+                    <p className="mt-1.5 text-sm text-stone-200/90 leading-relaxed">
+                      You are <span className="text-orange-300 font-medium">{fmtDuration(rank.gapUp)}</span> behind in the current {groupName ? `${groupName} ` : ""}race.
                     </p>
                     {groupId && (
                       <Link
                         to={`/groups/${groupId}`}
-                        className="mt-3 inline-flex rounded-full border border-emerald-300/20 px-3 py-1.5 text-xs font-medium text-emerald-100 hover:bg-emerald-300/10"
+                        className="mt-4 inline-flex rounded-full border border-orange-300/30 bg-orange-900/20 px-4 py-2 text-xs font-semibold text-orange-100 hover:bg-orange-800/40 transition-colors"
                       >
                         Open the league →
                       </Link>
@@ -137,24 +137,24 @@ export function DashboardGameCard({
                     <div className="mt-2 text-lg font-medium text-white">
                       You’re setting the pace
                     </div>
-                    <p className="mt-1 text-sm text-emerald-50/78">
+                    <p className="mt-1.5 text-sm text-stone-200/90">
                       Protect the lead and make the next person chase you.
                     </p>
                   </>
                 )}
               </div>
             ) : (
-              <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-emerald-50/78">
+              <div className="mt-5 rounded-2xl border border-white/10 bg-stone-950/40 p-5 text-sm text-stone-200/90 leading-relaxed shadow-sm">
                 Join a group to unlock rank races, rival gaps, and weekly ladder progression.
               </div>
             )}
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-            <div className="text-[11px] uppercase tracking-[0.18em] text-emerald-100/55">
+          <div className="rounded-3xl border border-white/5 bg-stone-950/30 shadow-inner p-5">
+            <div className="text-[11px] uppercase tracking-[0.18em] text-stone-300/70 font-semibold mb-4">
               Quests
             </div>
-            <div className="mt-3 flex flex-col gap-3">
+            <div className="flex flex-col gap-3">
               {quests.map((quest) => (
                 <QuestRow
                   key={quest.label}
@@ -168,10 +168,10 @@ export function DashboardGameCard({
 
             {badges.length > 0 && (
               <>
-                <div className="mt-5 text-[11px] uppercase tracking-[0.18em] text-emerald-100/55">
+                <div className="mt-6 text-[11px] uppercase tracking-[0.18em] text-stone-300/70 font-semibold mb-3">
                   Earned
                 </div>
-                <div className="mt-3 flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2">
                   {badges.map((badge) => (
                     <BadgePill
                       key={badge.title}
@@ -203,46 +203,46 @@ export function GroupRaceCard({
   const podium = entries?.slice(0, 3) ?? [];
 
   return (
-    <section className="rounded-[28px] border border-ink-800 bg-[radial-gradient(circle_at_top_left,_rgba(250,204,21,0.08),_transparent_32%),linear-gradient(180deg,_rgba(18,18,20,0.98),_rgba(11,11,13,0.98))] p-5">
-      <div className="flex flex-col gap-5">
+    <section className="rounded-3xl border border-white/10 bg-stone-900/60 backdrop-blur-md shadow-2xl p-6">
+      <div className="flex flex-col gap-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <div className="text-[11px] uppercase tracking-[0.22em] text-amber-300/65">
+            <div className="text-[11px] uppercase tracking-[0.25em] text-amber-200/75 font-semibold">
               {groupName} League
             </div>
-            <h2 className="mt-2 text-2xl font-semibold text-white">Weekly study board</h2>
-            <p className="mt-1 text-sm text-ink-300">
+            <h2 className="mt-2 text-3xl font-semibold text-white drop-shadow-md">Weekly study board</h2>
+            <p className="mt-2 text-sm text-stone-200/90 leading-relaxed font-medium">
               Keep the pressure up. The board updates with every session.
             </p>
           </div>
           {rank && (
-            <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-right">
-              <div className="text-[11px] uppercase tracking-[0.18em] text-ink-400">Your rank</div>
-              <div className="mt-1 text-2xl font-semibold text-white">#{rank.rank}</div>
-              <div className="text-xs text-ink-400">of {rank.total}</div>
+            <div className="rounded-2xl border border-white/10 bg-stone-950/40 shadow-inner px-5 py-4 text-right">
+              <div className="text-[11px] uppercase tracking-[0.18em] text-stone-300/70 font-medium">Your rank</div>
+              <div className="mt-1 text-3xl font-semibold text-orange-200 drop-shadow-sm">#{rank.rank}</div>
+              <div className="text-xs text-stone-400 font-medium mt-1">of {rank.total}</div>
             </div>
           )}
         </div>
 
         {podium.length > 0 && (
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-3">
             {podium.map((entry, idx) => (
               <div
                 key={entry.userId}
-                className={`rounded-2xl border p-4 ${idx === 0
-                    ? "border-amber-400/40 bg-amber-500/10"
+                className={`rounded-3xl border shadow-lg p-5 ${idx === 0
+                    ? "border-amber-400/40 bg-amber-900/30 backdrop-blur-sm"
                     : idx === 1
-                      ? "border-slate-400/30 bg-slate-300/5"
-                      : "border-orange-500/30 bg-orange-500/5"
+                      ? "border-stone-400/30 bg-stone-800/40 backdrop-blur-sm"
+                      : "border-orange-500/30 bg-orange-900/20 backdrop-blur-sm"
                   }`}
               >
-                <div className="text-[11px] uppercase tracking-[0.18em] text-ink-400">
+                <div className={`text-[11px] uppercase tracking-[0.25em] font-bold ${idx === 0 ? "text-amber-200" : idx === 1 ? "text-stone-300" : "text-orange-300"}`}>
                   {idx === 0 ? "1st" : idx === 1 ? "2nd" : "3rd"}
                 </div>
-                <div className="mt-2 text-lg font-medium text-white">{entry.displayName}</div>
-                <div className="mt-1 text-sm text-ink-300">{fmtDuration(entry.totalSeconds)}</div>
+                <div className="mt-3 text-xl font-semibold text-white">{entry.displayName}</div>
+                <div className="mt-1 text-sm text-stone-200/80 font-medium">{fmtDuration(entry.totalSeconds)}</div>
                 {entry.currentStreak > 0 && (
-                  <div className="mt-3 inline-flex rounded-full border border-white/10 px-2.5 py-1 text-xs text-amber-300">
+                  <div className="mt-4 inline-flex items-center rounded-full border border-white/10 bg-stone-950/30 px-3 py-1.5 text-xs text-amber-200 font-semibold shadow-inner">
                     🔥 {entry.currentStreak} day streak
                   </div>
                 )}
@@ -252,7 +252,7 @@ export function GroupRaceCard({
         )}
 
         {rank && (
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-2 mt-2">
             <RaceCallout
               title={rank.ahead ? `Next target: ${rank.ahead.displayName}` : "You’re in front"}
               body={
@@ -260,7 +260,7 @@ export function GroupRaceCard({
                   ? `You need ${fmtDuration(rank.gapUp)} to overtake them this week.`
                   : "Nobody is ahead of you right now. Extend the gap before they answer back."
               }
-              tone="emerald"
+              tone="amber"
             />
             <RaceCallout
               title={rank.behind ? `${rank.behind.displayName} is chasing` : "No one on your tail"}
@@ -269,7 +269,7 @@ export function GroupRaceCard({
                   ? `Your cushion is ${fmtDuration(rank.gapDown)}. One solid block keeps them behind you.`
                   : "Build more distance so the race stays uncomfortable for everyone else."
               }
-              tone="amber"
+              tone="orange"
             />
           </div>
         )}
@@ -280,9 +280,9 @@ export function GroupRaceCard({
 
 function StatChip({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-3">
-      <div className="text-[11px] uppercase tracking-[0.16em] text-emerald-100/50">{label}</div>
-      <div className="mt-2 text-lg font-medium text-white">{value}</div>
+    <div className="rounded-2xl border border-white/10 bg-stone-900/40 px-4 py-3 shadow-inner">
+      <div className="text-[10px] uppercase tracking-[0.2em] text-stone-300/70 font-semibold">{label}</div>
+      <div className="mt-2 text-xl font-semibold text-white drop-shadow-sm">{value}</div>
     </div>
   );
 }
@@ -302,16 +302,16 @@ function QuestRow({
   const complete = current >= goal;
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-3">
+    <div className="rounded-2xl border border-white/5 bg-stone-900/50 px-4 py-3.5 shadow-inner">
       <div className="flex items-center justify-between gap-3">
-        <div className="text-sm text-white">{label}</div>
-        <div className={`text-xs font-medium ${complete ? "text-emerald-300" : "text-ink-400"}`}>
+        <div className="text-sm font-medium text-stone-100">{label}</div>
+        <div className={`text-[11px] font-bold uppercase tracking-wider ${complete ? "text-amber-200" : "text-stone-400"}`}>
           {complete ? "Cleared" : value}
         </div>
       </div>
-      <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/10">
+      <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-stone-950/60 shadow-inner border border-white/5">
         <div
-          className={`h-full rounded-full ${complete ? "bg-emerald-400" : "bg-amber-300"}`}
+          className={`h-full rounded-full transition-all duration-1000 ${complete ? "bg-gradient-to-r from-amber-400 to-orange-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]" : "bg-gradient-to-r from-stone-500 to-stone-400"}`}
           style={{ width: `${Math.max(progress * 100, complete ? 100 : 6)}%` }}
         />
       </div>
@@ -330,17 +330,17 @@ function BadgePill({
 }) {
   const toneClass =
     tone === "amber"
-      ? "border-amber-400/25 bg-amber-400/10 text-amber-200"
+      ? "border-amber-500/30 bg-amber-900/20 text-amber-200"
       : tone === "sky"
-        ? "border-sky-400/25 bg-sky-400/10 text-sky-200"
+        ? "border-sky-500/30 bg-sky-900/20 text-sky-200"
         : tone === "rose"
-          ? "border-rose-400/25 bg-rose-400/10 text-rose-200"
-          : "border-emerald-400/25 bg-emerald-400/10 text-emerald-200";
+          ? "border-rose-500/30 bg-rose-900/20 text-rose-200"
+          : "border-orange-500/30 bg-orange-900/20 text-orange-200";
 
   return (
-    <div className={`rounded-full border px-3 py-2 ${toneClass}`}>
-      <div className="text-xs font-medium">{title}</div>
-      <div className="mt-0.5 text-[11px] opacity-80">{description}</div>
+    <div className={`rounded-xl border px-3 py-2 ${toneClass} backdrop-blur-sm shadow-sm`}>
+      <div className="text-xs font-bold tracking-wide">{title}</div>
+      <div className="mt-1 text-[11px] opacity-90 font-medium">{description}</div>
     </div>
   );
 }
@@ -352,17 +352,17 @@ function RaceCallout({
 }: {
   title: string;
   body: string;
-  tone: "emerald" | "amber";
+  tone: "orange" | "amber";
 }) {
   return (
     <div
-      className={`rounded-2xl border p-4 ${tone === "emerald"
-          ? "border-emerald-500/20 bg-emerald-500/5"
-          : "border-amber-500/20 bg-amber-500/5"
+      className={`rounded-2xl border p-5 shadow-lg backdrop-blur-sm ${tone === "orange"
+          ? "border-orange-500/20 bg-orange-900/20"
+          : "border-amber-500/20 bg-amber-900/20"
         }`}
     >
-      <div className="text-sm font-medium text-white">{title}</div>
-      <div className="mt-1 text-sm text-ink-300">{body}</div>
+      <div className={`text-sm font-bold tracking-wide ${tone === "orange" ? "text-orange-200" : "text-amber-200"}`}>{title}</div>
+      <div className="mt-2 text-sm text-stone-200/90 leading-relaxed font-medium">{body}</div>
     </div>
   );
 }
