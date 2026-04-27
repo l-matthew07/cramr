@@ -41,9 +41,16 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
       return res.status(401).json({ error: "missing_token" });
     }
     const token = auth.slice("Bearer ".length);
-    const payload = await verifyToken(token, {
-      secretKey: process.env.CLERK_SECRET_KEY,
-    });
+
+    let payload: Awaited<ReturnType<typeof verifyToken>>;
+    try {
+      payload = await verifyToken(token, {
+        secretKey: process.env.CLERK_SECRET_KEY,
+      });
+    } catch (err) {
+      console.warn("[auth] token verification failed", err);
+      return res.status(401).json({ error: "invalid_token" });
+    }
     const clerkId = payload.sub;
     if (!clerkId) return res.status(401).json({ error: "invalid_token" });
 
@@ -69,8 +76,7 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
     };
     next();
   } catch (err) {
-    console.error("[auth]", err);
-    res.status(401).json({ error: "unauthorized" });
+    next(err);
   }
 }
 
