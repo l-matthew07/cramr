@@ -1,3 +1,5 @@
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "onboarded_at" TIMESTAMP(3);
+
 CREATE TABLE "group_join_requests" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "group_id" UUID NOT NULL,
