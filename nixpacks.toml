@@ -1,4 +1,4 @@
-providers = ["node"]
+providers = []
 
 [phases.setup]
 nixPkgs = ["nodejs_24", "openssl"]
