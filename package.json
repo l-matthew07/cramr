@@ -5,6 +5,7 @@
   "engines": {
     "node": ">=20"
   },
+  "packageManager": "pnpm@9.15.9",
   "scripts": {
     "dev": "pnpm -r --parallel --no-bail dev",
     "dev:web": "pnpm --filter @cramr/web dev",
