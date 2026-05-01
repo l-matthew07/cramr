@@ -16,6 +16,7 @@
     "generate": "prisma generate",
     "migrate": "prisma migrate dev",
     "migrate:deploy": "prisma migrate deploy",
+    "migrate:resolve-failed": "prisma migrate resolve --rolled-back 20260426153000_group_join_requests || true",
     "setup": "prisma migrate deploy && prisma db execute --file ./prisma/extensions.sql --schema ./prisma/schema.prisma",
     "studio": "prisma studio",
     "seed": "tsx prisma/seed.ts",

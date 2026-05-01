@@ -1,13 +1,13 @@
 ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "onboarded_at" TIMESTAMP(3);
 
 CREATE TABLE "group_join_requests" (
-    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
-    "group_id" UUID NOT NULL,
-    "requester_user_id" UUID NOT NULL,
+    "id" TEXT NOT NULL DEFAULT gen_random_uuid()::text,
+    "group_id" TEXT NOT NULL,
+    "requester_user_id" TEXT NOT NULL,
     "status" TEXT NOT NULL DEFAULT 'pending',
     "requested_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "reviewed_at" TIMESTAMP(3),
-    "reviewed_by" UUID,
+    "reviewed_by" TEXT,
 
     CONSTRAINT "group_join_requests_pkey" PRIMARY KEY ("id")
 );

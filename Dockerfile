@@ -23,4 +23,4 @@ RUN pnpm --filter @cramr/api build
 FROM base AS production
 COPY --from=build /app /app
 EXPOSE 3000
-CMD ["sh", "-c", "pnpm --filter @cramr/db migrate:deploy && pnpm --filter @cramr/db setup && pnpm --filter @cramr/api start"]
+CMD ["sh", "-c", "pnpm --filter @cramr/db migrate:resolve-failed && pnpm --filter @cramr/db migrate:deploy && pnpm --filter @cramr/db setup && pnpm --filter @cramr/api start"]
