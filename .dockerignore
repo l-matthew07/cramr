@@ -1,0 +1,17 @@
+node_modules
+dist
+.git
+.github
+.env
+.env.*
+*.log
+.DS_Store
+.turbo
+.vite
+.next
+coverage
+.pnpm-store
+.superset
+README.md
+IMPLEMENTATION_PLAN.md
+apps/web
