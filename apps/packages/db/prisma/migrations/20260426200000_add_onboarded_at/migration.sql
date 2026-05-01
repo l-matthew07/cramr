@@ -1,1 +1,0 @@
-ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "onboarded_at" TIMESTAMP(3);

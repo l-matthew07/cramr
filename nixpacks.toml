@@ -1,7 +1,7 @@
 providers = []
 
 [phases.setup]
-nixPkgs = ["nodejs_22", "openssl"]
+nixPkgs = ["nodejs", "openssl"]
 
 [phases.install]
 cmds = [
